@@ -206,7 +206,7 @@ const CommentsSection = ({ boardId, isPublic = true, className = "" }: CommentsS
                             locale: ptBR,
                           })}
                         </span>
-                        {!isPublic && (
+                        {!isPublic && !comment.is_public && (
                           <Button
                             variant="ghost"
                             size="sm"
