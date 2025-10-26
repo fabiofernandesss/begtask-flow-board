@@ -210,19 +210,39 @@ const Board = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Buscar participantes das tarefas
+      const { data: participantsData, error: participantsError } = await supabase
         .from("task_participants")
-        .select(`
-          id,
-          task_id,
-          user_id,
-          role,
-          user:profiles(id, nome, foto_perfil)
-        `)
+        .select("id, task_id, user_id, role")
         .in("task_id", taskIds);
 
-      if (error) throw error;
-      setTaskParticipants(data || []);
+      if (participantsError) throw participantsError;
+
+      if (!participantsData || participantsData.length === 0) {
+        setTaskParticipants([]);
+        return;
+      }
+
+      // Buscar dados dos usuários
+      const userIds = [...new Set(participantsData.map(p => p.user_id))];
+      const { data: usersData, error: usersError } = await supabase
+        .from("profiles")
+        .select("id, nome, foto_perfil")
+        .in("id", userIds);
+
+      if (usersError) throw usersError;
+
+      // Combinar os dados
+      const participantsWithUsers = participantsData.map(participant => ({
+        ...participant,
+        user: usersData?.find(user => user.id === participant.user_id) || {
+          id: participant.user_id,
+          nome: "Usuário não encontrado",
+          foto_perfil: null
+        }
+      }));
+
+      setTaskParticipants(participantsWithUsers);
     } catch (error: any) {
       console.error("Erro ao carregar participantes das tarefas:", error);
       setTaskParticipants([]);
