@@ -59,7 +59,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         const formattedMessages: Message[] = messagesData.map(msg => ({
           id: msg.id,
           content: msg.message_content,
-          sender: msg.sender_type === 'user' ? 'user' : 'ai',
+          sender: (msg.sender_type === 'user' || msg.sender_type === 'client') ? 'user' : 'ai',
           timestamp: new Date(msg.created_at)
         }));
         setMessages(formattedMessages);

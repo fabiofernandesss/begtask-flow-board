@@ -631,13 +631,17 @@ const Board = () => {
       await Promise.all([
         supabase.from("board_messages").insert({
           board_id: id,
-          content: userMessage,
-          sender: "user",
+          sender_name: 'Usuário',
+          sender_type: "user",
+          message_content: userMessage,
+          is_public: false
         }),
         supabase.from("board_messages").insert({
           board_id: id,
-          content: aiResponse,
-          sender: "ai",
+          sender_name: 'IA Assistente',
+          sender_type: "ai",
+          message_content: aiResponse,
+          is_public: false
         }),
       ]);
 
@@ -739,14 +743,15 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
         .from("board_messages")
         .select("*")
         .eq("board_id", id)
+        .eq("is_public", false)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
       const messages = (data || []).map((msg: any) => ({
         id: msg.id,
-        content: msg.content,
-        sender: msg.sender,
+        content: msg.message_content,
+        sender: msg.sender_type,
         timestamp: msg.created_at,
       }));
 
