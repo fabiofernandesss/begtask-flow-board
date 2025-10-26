@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <style>
+      .bg { fill: #3b82f6; }
+      .logo { fill: white; }
+      .accent { fill: #8b5cf6; }
+      .pulse { 
+        animation: pulse 2s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .rotate { 
+        animation: rotate 3s linear infinite;
+        transform-origin: center;
+      }
+      .float {
+        animation: float 4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.9; }
+      }
+      @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+    </style>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fundo com gradiente -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGradient)"/>
+  
+  <!-- Sombra do logo -->
+  <g transform="translate(4, 4)" opacity="0.2">
+    <path fill="black" d="M128 96h128c48 0 80 32 80 72 0 24-16 48-40 56 32 8 56 32 56 64 0 48-40 80-88 80H128V96z"/>
+  </g>
+  
+  <!-- Logo principal (B estilizado) -->
+  <g class="pulse">
+    <path class="logo" d="M128 96h128c48 0 80 32 80 72 0 24-16 48-40 56 32 8 56 32 56 64 0 48-40 80-88 80H128V96z"/>
+    <path class="bg" d="M192 160h64c16 0 32 8 32 24s-16 24-32 24h-64V160z"/>
+    <path class="bg" d="M192 256h72c24 0 40 8 40 32s-16 32-40 32h-72v-64z"/>
+  </g>
+  
+  <!-- Elementos decorativos rotativos -->
+  <g class="rotate">
+    <circle cx="384" cy="128" r="32" class="logo" opacity="0.6"/>
+    <circle cx="400" cy="144" r="8" class="accent"/>
+  </g>
+  
+  <!-- Elementos decorativos flutuantes -->
+  <g class="float">
+    <circle cx="128" cy="384" r="16" class="logo" opacity="0.4"/>
+    <circle cx="384" cy="384" r="20" class="logo" opacity="0.3"/>
+    <circle cx="96" cy="128" r="12" class="accent" opacity="0.5"/>
+  </g>
+  
+  <!-- Detalhes adicionais -->
+  <rect x="64" y="64" width="4" height="384" rx="2" class="logo" opacity="0.2"/>
+  <rect x="444" y="64" width="4" height="384" rx="2" class="logo" opacity="0.2"/>
+</svg>

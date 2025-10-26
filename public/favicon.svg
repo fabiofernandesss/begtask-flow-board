@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <style>
+      .bg { fill: #3b82f6; }
+      .logo { fill: white; }
+      .pulse { 
+        animation: pulse 2s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .rotate { 
+        animation: rotate 3s linear infinite;
+        transform-origin: center;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+      @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </defs>
+  
+  <!-- Fundo azul -->
+  <rect width="32" height="32" rx="6" class="bg"/>
+  
+  <!-- Logo principal (B estilizado) -->
+  <g class="pulse">
+    <path class="logo" d="M8 6h8c3 0 5 2 5 4.5 0 1.5-1 3-2.5 3.5 2 0.5 3.5 2 3.5 4 0 3-2.5 5-5.5 5H8V6z"/>
+    <path class="bg" d="M12 10h4c1 0 2 0.5 2 1.5s-1 1.5-2 1.5h-4V10z"/>
+    <path class="bg" d="M12 16h4.5c1.5 0 2.5 0.5 2.5 2s-1 2-2.5 2H12v-4z"/>
+  </g>
+  
+  <!-- Elemento decorativo rotativo -->
+  <g class="rotate">
+    <circle cx="24" cy="8" r="2" class="logo" opacity="0.6"/>
+  </g>
+</svg>

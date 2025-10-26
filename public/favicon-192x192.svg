@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <style>
+      .bg { fill: #3b82f6; }
+      .logo { fill: white; }
+      .pulse { 
+        animation: pulse 2s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .rotate { 
+        animation: rotate 3s linear infinite;
+        transform-origin: center;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+      @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </defs>
+  
+  <!-- Fundo azul com bordas arredondadas -->
+  <rect width="192" height="192" rx="36" class="bg"/>
+  
+  <!-- Logo principal (B estilizado) -->
+  <g class="pulse">
+    <path class="logo" d="M48 36h48c18 0 30 12 30 27 0 9-6 18-15 21 12 3 21 12 21 24 0 18-15 30-33 30H48V36z"/>
+    <path class="bg" d="M72 60h24c6 0 12 3 12 9s-6 9-12 9H72V60z"/>
+    <path class="bg" d="M72 96h27c9 0 15 3 15 12s-6 12-15 12H72v-24z"/>
+  </g>
+  
+  <!-- Elemento decorativo rotativo -->
+  <g class="rotate">
+    <circle cx="144" cy="48" r="12" class="logo" opacity="0.6"/>
+  </g>
+  
+  <!-- Elementos decorativos adicionais -->
+  <circle cx="48" cy="144" r="6" class="logo" opacity="0.4"/>
+  <circle cx="144" cy="144" r="8" class="logo" opacity="0.3"/>
+</svg>

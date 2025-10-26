@@ -1,0 +1,8 @@
+project_id = "ejmbwemerkdmqyrspijz"
+
+[functions.generate-board-content]
+verify_jwt = false
+[functions.vectorize-board]
+verify_jwt = false
+[functions.search-board]
+verify_jwt = false
