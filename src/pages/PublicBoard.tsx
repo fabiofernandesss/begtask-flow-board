@@ -732,11 +732,8 @@ const PublicBoard = () => {
         .from("board_messages")
         .insert({
           board_id: id,
-          sender_name: "Usuário Anônimo",
-          sender_email: null,
-          sender_type: 'client',
-          message_content: userMessage,
-          is_public: true
+          sender: "Usuário Anônimo",
+          content: userMessage
         })
         .select()
         .single();
@@ -813,11 +810,8 @@ const PublicBoard = () => {
         .from("board_messages")
         .insert({
           board_id: id,
-          sender_name: "Assistente IA",
-          sender_email: null,
-          sender_type: 'ai',
-          message_content: aiResponseText,
-          is_public: true
+          sender: "Assistente IA",
+          content: aiResponseText
         })
         .select()
         .single();

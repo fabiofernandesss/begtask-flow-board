@@ -631,17 +631,13 @@ const Board = () => {
       await Promise.all([
         supabase.from("board_messages").insert({
           board_id: id,
-          sender_name: 'Usuário',
-          sender_type: "user",
-          message_content: userMessage,
-          is_public: false
+          sender: 'Usuário',
+          content: userMessage
         }),
         supabase.from("board_messages").insert({
           board_id: id,
-          sender_name: 'IA Assistente',
-          sender_type: "ai",
-          message_content: aiResponse,
-          is_public: false
+          sender: 'IA Assistente',
+          content: aiResponse
         }),
       ]);
 
@@ -743,19 +739,18 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
         .from("board_messages")
         .select("*")
         .eq("board_id", id)
-        .eq("is_public", false)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
       const messages = (data || []).map((msg: any) => ({
         id: msg.id,
-        content: msg.message_content,
-        sender: msg.sender_type,
+        content: msg.content,
+        sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
         timestamp: msg.created_at,
       }));
 
-      setBoardMessages(messages);
+      setBoardMessages(data || []);
       setChatHistory(messages);
     } catch (error) {
       console.error("Erro ao carregar histórico do chat:", error);

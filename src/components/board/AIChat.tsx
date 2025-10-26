@@ -75,10 +75,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         .from('board_messages')
         .insert({
           board_id: boardId,
-          sender_name: senderType === 'user' ? 'Usuário' : 'IA Assistente',
-          sender_type: senderType,
-          message_content: content,
-          is_public: isPublic
+          sender: senderType === 'user' ? 'Usuário' : 'IA Assistente',
+          content: content
         });
 
       if (error) {
