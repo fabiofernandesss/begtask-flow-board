@@ -590,10 +590,11 @@ Pergunta do usuário: ${userMessage}
 
 Responda de forma útil e específica sobre o projeto, suas tarefas, progresso ou sugestões de melhoria. Seja conciso mas informativo.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-goog-api-key": import.meta.env.VITE_GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: [{

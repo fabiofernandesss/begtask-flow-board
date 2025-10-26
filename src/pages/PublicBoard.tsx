@@ -763,10 +763,11 @@ const PublicBoard = () => {
 
       const prompt = `Você é um assistente de IA ajudando no projeto "${board?.titulo}".\n\nContexto do projeto:\n${JSON.stringify(boardContext, null, 2)}\n\nPergunta do usuário: ${userMessage}\n\nResponda de forma útil. Se a pergunta não estiver diretamente relacionada ao projeto, responda mesmo assim de forma geral, e quando possível conecte com o projeto.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-goog-api-key": import.meta.env.VITE_GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: [{
