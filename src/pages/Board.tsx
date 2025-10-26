@@ -744,7 +744,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
         .from("board_messages")
         .select("id, sender_name, sender_type, message_content, created_at, is_public")
         .eq("board_id", id)
-+        .eq("is_public", false)
+        .eq("is_public", false)
         .order("created_at", { ascending: false })
         .limit(50);
 
