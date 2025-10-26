@@ -755,15 +755,12 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
 
       const messages = sortedData.map((msg: any) => ({
         id: msg.id,
--        content: msg.content,
--        sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
-+        content: msg.message_content,
-+        sender: msg.sender_type === 'ai' ? 'ai' : 'user',
+        content: msg.message_content,
+        sender: msg.sender_type === 'ai' ? 'ai' : 'user',
         timestamp: msg.created_at,
       }));
 
--      setBoardMessages(sortedData);
-+      setBoardMessages(sortedData);
+      setBoardMessages(sortedData);
       setChatHistory(messages);
     } catch (error) {
       console.error("Erro ao carregar histórico do chat:", error);
