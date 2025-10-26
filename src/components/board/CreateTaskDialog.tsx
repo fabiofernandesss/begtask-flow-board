@@ -76,6 +76,17 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
 
     setAiLoading(true);
     try {
+      // Verificar autenticação antes de fazer a chamada
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw new Error(`Erro de autenticação: ${sessionError.message}`);
+      }
+      
+      if (!session) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-board-content", {
         body: { prompt: aiPrompt, type: "tasks" },
       });
@@ -112,9 +123,24 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
       setAiPrompt("");
       onTaskCreated();
     } catch (error: any) {
+      console.error("Erro detalhado na geração de tarefas com IA:", error);
+      
+      let errorMessage = error.message;
+      
+      // Verificar se é um erro de conectividade
+      if (error.message?.includes("ERR_INTERNET_DISCONNECTED") || 
+          error.message?.includes("Failed to fetch") ||
+          error.message?.includes("NetworkError")) {
+        errorMessage = "Erro de conectividade. Verifique sua conexão com a internet e tente novamente.";
+      } else if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        errorMessage = "Sessão expirada. Faça login novamente.";
+      } else if (error.message?.includes("GEMINI_API_KEY")) {
+        errorMessage = "Erro de configuração da IA. Contate o administrador.";
+      }
+      
       toast({
         title: "Erro ao gerar tarefas com IA",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

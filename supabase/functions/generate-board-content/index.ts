@@ -11,12 +11,18 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Iniciando geração de conteúdo com IA...');
     const { prompt, type } = await req.json();
+    console.log('Parâmetros recebidos:', { prompt: prompt?.substring(0, 100), type });
+    
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
     if (!GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY não encontrada nas variáveis de ambiente');
       throw new Error('GEMINI_API_KEY não configurada');
     }
+    
+    console.log('GEMINI_API_KEY encontrada, prosseguindo...');
 
     let systemPrompt = '';
     if (type === 'columns') {
@@ -27,6 +33,7 @@ serve(async (req) => {
       systemPrompt = 'Você é um assistente que gera tarefas. Retorne APENAS um array JSON com 3-7 objetos contendo "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"Tarefa 1","descricao":"Descrição","prioridade":"media"}]';
     }
 
+    console.log('Fazendo chamada para API do Gemini...');
     const response = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {
@@ -48,6 +55,8 @@ serve(async (req) => {
         })
       }
     );
+    
+    console.log('Resposta da API do Gemini recebida:', response.status);
 
     if (!response.ok) {
       const error = await response.text();
@@ -56,7 +65,10 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log('Dados recebidos da API do Gemini:', JSON.stringify(data).substring(0, 200));
+    
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('Texto gerado:', generatedText.substring(0, 200));
     
     // Extract JSON from markdown code blocks if present
     let jsonText = generatedText.trim();
@@ -66,7 +78,9 @@ serve(async (req) => {
       jsonText = jsonText.split('```')[1].split('```')[0].trim();
     }
     
+    console.log('JSON extraído:', jsonText.substring(0, 200));
     const parsedData = JSON.parse(jsonText);
+    console.log('Dados parseados com sucesso, retornando...');
 
     return new Response(JSON.stringify({ data: parsedData }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
