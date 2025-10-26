@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable } from "@hello-pangea/dnd";
 import CommentsSection from "@/components/board/CommentsSection";
 import PublicTaskDetailsModal from "@/components/board/PublicTaskDetailsModal";
-import { AIChat } from "@/components/board/AIChat";
+// import { AIChat } from "@/components/board/AIChat";
 import ReactMarkdown from "react-markdown";
 
 interface Board {
@@ -746,38 +746,64 @@ const PublicBoard = () => {
       // Atualizar lista de mensagens
       setBoardMessages(prev => [...prev, newMessage]);
 
-      // Simular resposta da IA
-      await new Promise(resolve => setTimeout(resolve, 500));
-      let aiResponse = generateAIResponse(userMessage, board, columns, boardMessages);
+      // Gerar resposta da IA usando contexto do board e permitir perguntas gerais
+      const boardContext = {
+        titulo: board?.titulo,
+        descricao: board?.descricao,
+        colunas: columns.map(col => ({
+          titulo: col.titulo,
+          tarefas: col.tasks.map(task => ({
+            titulo: task.titulo,
+            descricao: task.descricao,
+            prioridade: task.prioridade,
+            data_entrega: task.data_entrega,
+          }))
+        }))
+      };
 
-      // Fallback semântico (RAG) quando a resposta é genérica
-      const isGeneric = aiResponse.includes('Entendi sua pergunta sobre');
-      const isExplicitSummary = ['resumo','todas tarefas','todas as tarefas','quantas tarefas','número de tarefas','total de tarefas'].some(k => userMessage.toLowerCase().includes(k));
-      if (isGeneric && !isExplicitSummary) {
-        const { data: ragData, error: ragErr } = await supabase.functions.invoke('search-board', {
-          body: { board_id: id, query: userMessage, top_k: 8 }
-        });
-        if (!ragErr && ragData?.success && Array.isArray(ragData.results) && ragData.results.length > 0) {
-          let response = `🔎 **Resultados relacionados ao seu pedido**\n\n`;
-          for (const r of ragData.results) {
-            let label = 'Item';
-            let line = '';
-            try {
-              const obj = JSON.parse(r.content);
-              if (obj.type === 'task') {
-                label = 'Tarefa';
-                const prEmoji = obj.prioridade === 'alta' ? '⚡' : obj.prioridade === 'media' ? '⚠️' : '🟢';
-                const due = obj.data_entrega ? ` • entrega: ${new Date(obj.data_entrega).toLocaleDateString('pt-BR')}` : '';
-                line = `${prEmoji} **${obj.titulo}** • coluna: ${obj.coluna_titulo}${due}`;
-              } else if (obj.type === 'column') {
-                label = 'Coluna';
-                line = `📦 **${obj.coluna_titulo}**`;
-              } else if (obj.type === 'board') {
-                label = 'Board';
-                line = `🧭 **${obj.titulo}**${obj.descricao ? ` — ${obj.descricao}` : ''}`;
-              } else {
-                line = r.content;
-              }
+      const prompt = `Você é um assistente de IA ajudando no projeto "${board?.titulo}".\n\nContexto do projeto:\n${JSON.stringify(boardContext, null, 2)}\n\nPergunta do usuário: ${userMessage}\n\nResponda de forma útil. Se a pergunta não estiver diretamente relacionada ao projeto, responda mesmo assim de forma geral, e quando possível conecte com o projeto.`;
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "Você é um assistente útil e conciso. Dê respostas claras em português." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
+        }),
+      });
+
+      let aiResponseText = "Não consegui gerar uma resposta agora.";
+      if (response.ok) {
+        const data = await response.json();
+        aiResponseText = data.choices[0]?.message?.content || aiResponseText;
+      }
+
+      // Salvar resposta da IA
+      const { data: aiMessage, error: aiError } = await supabase
+        .from("board_messages")
+        .insert({
+          board_id: id,
+          sender_name: "Assistente IA",
+          sender_email: null,
+          sender_type: 'ai',
+          message_content: aiResponseText,
+          is_public: true
+        })
+        .select()
+        .single();
+
+      if (aiError) throw aiError;
+
+      // Atualizar lista de mensagens com a resposta da IA
+      setBoardMessages(prev => [...prev, aiMessage]);
             } catch (_) {
               line = r.content;
             }
@@ -1220,7 +1246,6 @@ const PublicBoard = () => {
         onOpenChange={setTaskDetailsOpen}
       />
 
-      <AIChat boardId={id!} isPublic={true} />
     </div>
   );
 };
