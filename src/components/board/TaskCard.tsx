@@ -120,7 +120,7 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                 <div className="flex items-center gap-1">
                   {/* Responsável da tarefa (se definido no campo responsavel_id) */}
                   {responsavel && (
-                    <Avatar className="w-6 h-6 border-2 border-primary" title={`${responsavel.nome} (Responsável)`}>
+                    <Avatar className="w-6 h-6 border-2 border-primary" title={`${responsavel.nome} (Participante principal)`}>
                       <AvatarImage src={responsavel.foto_perfil || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
                         {responsavel.nome.charAt(0).toUpperCase()}
@@ -138,7 +138,7 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                         className={`w-6 h-6 border-2 ${
                           participant.role === 'responsible' ? 'border-primary' : 'border-background'
                         }`}
-                        title={`${participant.user.nome} (${participant.role === 'responsible' ? 'Responsável' : 'Participante'})`}
+                        title={`${participant.user.nome} (${participant.role === 'responsible' ? 'Participante principal' : 'Participante'})`}
                       >
                         <AvatarImage src={participant.user.foto_perfil || undefined} />
                         <AvatarFallback className={`text-[10px] ${

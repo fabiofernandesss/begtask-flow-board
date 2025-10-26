@@ -629,16 +629,30 @@ const Board = () => {
 
       // Save both messages to database
       await Promise.all([
-        supabase.from("board_messages").insert({
-          board_id: id,
-          sender: 'Usuário',
-          content: userMessage
-        }),
-        supabase.from("board_messages").insert({
-          board_id: id,
-          sender: 'IA Assistente',
-          content: aiResponse
-        }),
+-        supabase.from("board_messages").insert({
+-          board_id: id,
+-          sender: 'Usuário',
+-          content: userMessage
+-        }),
+-        supabase.from("board_messages").insert({
+-          board_id: id,
+-          sender: 'IA Assistente',
+-          content: aiResponse
+-        }),
++        supabase.from("board_messages").insert({
++          board_id: id,
++          sender_name: 'Usuário',
++          sender_type: 'internal',
++          message_content: userMessage,
++          is_public: false,
++        }),
++        supabase.from("board_messages").insert({
++          board_id: id,
++          sender_name: 'IA Assistente',
++          sender_type: 'ai',
++          message_content: aiResponse,
++          is_public: false,
++        }),
       ]);
 
     } catch (error) {
@@ -738,8 +752,9 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
       // Carregar apenas as últimas 50 mensagens para evitar sobrecarga
       const { data, error } = await supabase
         .from("board_messages")
-        .select("*")
+        .select("id, sender_name, sender_type, message_content, created_at, is_public")
         .eq("board_id", id)
++        .eq("is_public", false)
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -750,12 +765,15 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
 
       const messages = sortedData.map((msg: any) => ({
         id: msg.id,
-        content: msg.content,
-        sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
+-        content: msg.content,
+-        sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
++        content: msg.message_content,
++        sender: msg.sender_type === 'ai' ? 'ai' : 'user',
         timestamp: msg.created_at,
       }));
 
-      setBoardMessages(sortedData);
+-      setBoardMessages(sortedData);
++      setBoardMessages(sortedData);
       setChatHistory(messages);
     } catch (error) {
       console.error("Erro ao carregar histórico do chat:", error);

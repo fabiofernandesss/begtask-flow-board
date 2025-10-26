@@ -46,7 +46,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     try {
       const { data: messagesData, error } = await supabase
         .from('board_messages')
-        .select('*')
+        .select('id, content, sender, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: true });
 
@@ -58,8 +58,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       if (messagesData) {
         const formattedMessages: Message[] = messagesData.map(msg => ({
           id: msg.id,
-          content: msg.message_content,
-          sender: (msg.sender_type === 'user' || msg.sender_type === 'client') ? 'user' : 'ai',
+          content: msg.content,
+          sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
           timestamp: new Date(msg.created_at)
         }));
         setMessages(formattedMessages);

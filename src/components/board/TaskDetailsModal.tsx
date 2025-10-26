@@ -188,7 +188,8 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
           {/* Responsável Atual */}
           {selectedUser && (
             <div>
-              <Label className="text-base mb-2 block">Responsável</Label>
+-              <Label className="text-base mb-2 block">Responsável</Label>
++              <Label className="text-base mb-2 block">Participante principal</Label>
               <div className="flex items-center gap-3 bg-muted/30 rounded-lg p-3">
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={selectedUser.foto_perfil || undefined} />
@@ -213,9 +214,12 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
           {/* Adicionar Usuário */}
           <div>
-            <Label className="text-base mb-2 block">
-              {selectedUser ? "Alterar Responsável" : "Atribuir Responsável"}
-            </Label>
+-            <Label className="text-base mb-2 block">
+-              {selectedUser ? "Alterar Responsável" : "Atribuir Responsável"}
+-            </Label>
++            <Label className="text-base mb-2 block">
++              {selectedUser ? "Alterar Participante principal" : "Atribuir Participante principal"}
++            </Label>
             <Input
               placeholder="Buscar usuários..."
               value={searchTerm}

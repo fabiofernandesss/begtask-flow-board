@@ -174,7 +174,8 @@ const PublicTaskDetailsModal = ({ task, open, onOpenChange }: PublicTaskDetailsM
           {/* Responsável */}
           {responsavel && (
             <div>
-              <Label className="text-base mb-2 block">Responsável</Label>
+-              <Label className="text-base mb-2 block">Responsável</Label>
++              <Label className="text-base mb-2 block">Participante principal</Label>
               <div className="flex items-center gap-3 bg-muted/30 rounded-lg p-3">
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={responsavel.foto_perfil || undefined} />
