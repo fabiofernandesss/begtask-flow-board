@@ -13,8 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Task {
@@ -56,31 +55,11 @@ const priorityColors = {
 };
 
 const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskParticipants = [] }: TaskCardProps) => {
-  const [assignee, setAssignee] = useState<{ id: string; nome: string; foto_perfil: string | null } | null>(null);
-
   // Obter participantes desta tarefa específica
   const participants = taskParticipants.filter(p => p.task_id === task.id);
   
   // Obter responsável da tarefa
   const responsavel = teamMembers.find(member => member.id === task.responsavel_id);
-
-  useEffect(() => {
-    let ignore = false;
-    const fetchAssignee = async () => {
-      if (!task.responsavel_id) { setAssignee(null); return; }
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nome, foto_perfil")
-        .eq("id", task.responsavel_id)
-        .single();
-      if (!ignore) {
-        if (error) { setAssignee(null); }
-        else { setAssignee(data || null); }
-      }
-    };
-    fetchAssignee();
-    return () => { ignore = true; };
-  }, [task.responsavel_id]);
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -118,51 +97,73 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                 
                 {/* Indicadores de participantes */}
                 <div className="flex items-center gap-1">
-                  {/* Responsável da tarefa (se definido no campo responsavel_id) */}
-                  {responsavel && (
-                    <Avatar className="w-6 h-6 border-2 border-primary" title={`${responsavel.nome} (Participante principal)`}>
-                      <AvatarImage src={responsavel.foto_perfil || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                        {responsavel.nome.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  
-                  {/* Participantes da tarefa (excluindo o responsável se já foi mostrado) */}
-                  {participants
-                    .filter(participant => participant.user_id !== task.responsavel_id)
-                    .slice(0, responsavel ? 2 : 3)
-                    .map((participant) => (
-                      <Avatar 
-                        key={participant.id} 
-                        className={`w-6 h-6 border-2 ${
-                          participant.role === 'responsible' ? 'border-primary' : 'border-background'
-                        }`}
-                        title={`${participant.user.nome} (${participant.role === 'responsible' ? 'Participante principal' : 'Participante'})`}
-                      >
-                        <AvatarImage src={participant.user.foto_perfil || undefined} />
-                        <AvatarFallback className={`text-[10px] ${
-                          participant.role === 'responsible' 
-                            ? 'bg-primary/10 text-primary' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {participant.user.nome.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    ))}
-                  
-                  {/* Contador de participantes adicionais */}
                   {(() => {
-                    const filteredParticipants = participants.filter(p => p.user_id !== task.responsavel_id);
-                    const maxVisible = responsavel ? 2 : 3;
-                    const remaining = filteredParticipants.length - maxVisible;
+                    // Combinar responsável e participantes para exibição
+                    const allParticipants = [];
                     
-                    return remaining > 0 && (
-                      <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          +{remaining}
-                        </span>
-                      </div>
+                    // Adicionar responsável se existir
+                    if (responsavel) {
+                      allParticipants.push({
+                        id: `responsavel-${responsavel.id}`,
+                        user: responsavel,
+                        role: 'responsible',
+                        isResponsavel: true
+                      });
+                    }
+                    
+                    // Adicionar participantes (excluindo o responsável se já foi adicionado)
+                    participants
+                      .filter(participant => participant.user_id !== task.responsavel_id)
+                      .forEach(participant => {
+                        allParticipants.push({
+                          ...participant,
+                          isResponsavel: false
+                        });
+                      });
+                    
+                    // Se não há participantes, não mostrar nada
+                    if (allParticipants.length === 0) return null;
+                    
+                    const maxVisible = 3;
+                    const visibleParticipants = allParticipants.slice(0, maxVisible);
+                    const remaining = allParticipants.length - maxVisible;
+                    
+                    return (
+                      <>
+                        {visibleParticipants.map((participant) => (
+                          <Avatar 
+                            key={participant.id} 
+                            className={`w-6 h-6 border-2 ${
+                              participant.role === 'responsible' || participant.isResponsavel 
+                                ? 'border-primary' 
+                                : 'border-background'
+                            }`}
+                            title={`${participant.user.nome} (${
+                              participant.role === 'responsible' || participant.isResponsavel 
+                                ? 'Participante principal' 
+                                : 'Participante'
+                            })`}
+                          >
+                            <AvatarImage src={participant.user.foto_perfil || undefined} />
+                            <AvatarFallback className={`text-[10px] ${
+                              participant.role === 'responsible' || participant.isResponsavel
+                                ? 'bg-primary/10 text-primary' 
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {participant.user.nome.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                        
+                        {/* Contador de participantes adicionais */}
+                        {remaining > 0 && (
+                          <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
+                            <span className="text-[10px] font-medium text-muted-foreground">
+                              +{remaining}
+                            </span>
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
                 </div>
