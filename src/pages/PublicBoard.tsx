@@ -804,33 +804,6 @@ const PublicBoard = () => {
 
       // Atualizar lista de mensagens com a resposta da IA
       setBoardMessages(prev => [...prev, aiMessage]);
-            } catch (_) {
-              line = r.content;
-            }
-            response += `- ${line}\n`;
-          }
-          response += `\n💡 *Você pode pedir filtros mais específicos (por tema, prioridade, prazo).*`;
-          aiResponse = response;
-        }
-      }
-
-      // Salvar resposta da IA no banco de dados
-      const { data: aiMessage, error: aiError } = await supabase
-        .from("board_messages")
-        .insert({
-          board_id: id,
-          sender_name: 'Assistente IA',
-          sender_type: 'ai',
-          message_content: aiResponse,
-          is_public: true
-        })
-        .select()
-        .single();
-
-      if (aiError) throw aiError;
-
-      // Atualizar lista de mensagens
-      setBoardMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       toast({
