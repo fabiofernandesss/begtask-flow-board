@@ -26,11 +26,11 @@ serve(async (req) => {
 
     let systemPrompt = '';
     if (type === 'columns') {
-      systemPrompt = 'Você é um assistente que gera colunas para quadros kanban. Retorne APENAS um array JSON com 3-5 objetos contendo "titulo" (string). Exemplo: [{"titulo":"A Fazer"},{"titulo":"Em Progresso"}]';
+      systemPrompt = 'Você é um assistente que gera colunas para quadros kanban baseadas nas ÁREAS/ETAPAS específicas do projeto. NÃO use estágios genéricos como "A Fazer", "Em Progresso", "Concluído". Crie colunas que representem as diferentes áreas ou fases específicas do projeto descrito. Retorne APENAS um array JSON com 3-6 objetos contendo "titulo" (string). Exemplo para um projeto de app: [{"titulo":"Design UI/UX"},{"titulo":"Backend API"},{"titulo":"Frontend"},{"titulo":"Testes"}]';
     } else if (type === 'columns_with_tasks') {
-      systemPrompt = 'Você é um assistente que gera colunas e tarefas para quadros kanban. Retorne APENAS um array JSON com 3-5 objetos, cada um contendo "titulo" (string da coluna) e "tasks" (array com 3-5 tarefas). Cada tarefa deve ter "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"A Fazer","tasks":[{"titulo":"Tarefa 1","descricao":"Descrição da tarefa","prioridade":"media"}]}]';
+      systemPrompt = 'Você é um assistente que gera colunas e tarefas para quadros kanban. Crie colunas baseadas nas ÁREAS/ETAPAS específicas do projeto (NÃO use "A Fazer", "Em Progresso", "Concluído"). Distribua as tarefas APENAS nas colunas de áreas específicas, NUNCA em colunas de status. Retorne APENAS um array JSON com 3-6 objetos, cada um contendo "titulo" (string da área/etapa) e "tasks" (array com 2-4 tarefas). Cada tarefa deve ter "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"Design UI/UX","tasks":[{"titulo":"Criar wireframes","descricao":"Desenvolver wireframes das telas principais","prioridade":"alta"}]},{"titulo":"Backend API","tasks":[{"titulo":"Configurar banco de dados","descricao":"Estruturar tabelas e relacionamentos","prioridade":"alta"}]}]';
     } else if (type === 'tasks') {
-      systemPrompt = 'Você é um assistente que gera tarefas. Retorne APENAS um array JSON com 3-7 objetos contendo "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"Tarefa 1","descricao":"Descrição","prioridade":"media"}]';
+      systemPrompt = 'Você é um assistente que gera tarefas específicas para uma área/etapa do projeto. Retorne APENAS um array JSON com 3-7 objetos contendo "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"Implementar autenticação","descricao":"Criar sistema de login e registro","prioridade":"alta"}]';
     }
 
     console.log('Fazendo chamada para API do Gemini...');
