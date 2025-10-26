@@ -35,6 +35,60 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     scrollToBottom();
   }, [messages]);
 
+  // Carregar mensagens existentes quando o chat abrir
+  useEffect(() => {
+    if (isOpen && boardId) {
+      loadMessages();
+    }
+  }, [isOpen, boardId]);
+
+  const loadMessages = async () => {
+    try {
+      const { data: messagesData, error } = await supabase
+        .from('board_messages')
+        .select('*')
+        .eq('board_id', boardId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar mensagens:', error);
+        return;
+      }
+
+      if (messagesData) {
+        const formattedMessages: Message[] = messagesData.map(msg => ({
+          id: msg.id,
+          content: msg.message_content,
+          sender: msg.sender_type === 'user' ? 'user' : 'ai',
+          timestamp: new Date(msg.created_at)
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mensagens:', error);
+    }
+  };
+
+  const saveMessage = async (content: string, senderType: 'user' | 'ai') => {
+    try {
+      const { error } = await supabase
+        .from('board_messages')
+        .insert({
+          board_id: boardId,
+          sender_name: senderType === 'user' ? 'Usuário' : 'IA Assistente',
+          sender_type: senderType,
+          message_content: content,
+          is_public: isPublic
+        });
+
+      if (error) {
+        console.error('Erro ao salvar mensagem:', error);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar mensagem:', error);
+    }
+  };
+
   const getBoardData = async () => {
     try {
       // Buscar dados do board
@@ -373,6 +427,10 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     };
 
     setMessages(prev => [...prev, userMessage]);
+    
+    // Salvar mensagem do usuário no banco
+    await saveMessage(inputValue, 'user');
+    
     setInputValue('');
     setIsLoading(true);
 
@@ -388,6 +446,10 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      
+      // Salvar resposta da IA no banco
+      await saveMessage(aiResponse, 'ai');
+      
     } catch (error) {
       toast({
         title: "Erro",
