@@ -37,14 +37,91 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
 
   const getBoardData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('board_ai_view')
-        .select('*')
-        .eq('board_id', boardId)
+      // Buscar dados do board
+      const { data: boardData, error: boardError } = await supabase
+        .from('boards')
+        .select(`
+          id,
+          titulo,
+          descricao,
+          created_at,
+          publico,
+          users!boards_user_id_fkey(nome)
+        `)
+        .eq('id', boardId)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (boardError) throw boardError;
+
+      // Buscar colunas
+      const { data: columnsData, error: columnsError } = await supabase
+        .from('columns')
+        .select('id, titulo, posicao, cor')
+        .eq('board_id', boardId)
+        .order('posicao');
+
+      if (columnsError) throw columnsError;
+
+      // Buscar tarefas
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select(`
+          id,
+          titulo,
+          descricao,
+          prioridade,
+          data_entrega,
+          column_id,
+          created_at,
+          responsavel_id,
+          users!tasks_responsavel_id_fkey(nome),
+          columns!tasks_column_id_fkey(titulo)
+        `)
+        .in('column_id', columnsData?.map(c => c.id) || []);
+
+      if (tasksError) throw tasksError;
+
+      // Buscar comentários
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('board_comments')
+        .select('id, author_name, content, is_public, created_at')
+        .eq('board_id', boardId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (commentsError) throw commentsError;
+
+      // Buscar mensagens do chat
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('board_messages')
+        .select('id, content, sender, created_at')
+        .eq('board_id', boardId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (messagesError) throw messagesError;
+
+      // Estruturar dados como esperado
+      return {
+        board_id: boardData.id,
+        board_title: boardData.titulo,
+        board_description: boardData.descricao,
+        board_created_at: boardData.created_at,
+        is_public: boardData.publico,
+        owner_name: boardData.users?.nome || 'Usuário',
+        columns: columnsData || [],
+        tasks: tasksData?.map(task => ({
+          ...task,
+          responsible: task.users?.nome || 'Não atribuído',
+          column_title: task.columns?.titulo || ''
+        })) || [],
+        board_comments: commentsData || [],
+        board_messages: messagesData || [],
+        total_tasks: tasksData?.length || 0,
+        total_columns: columnsData?.length || 0,
+        total_comments: commentsData?.length || 0,
+        total_messages: messagesData?.length || 0
+      };
     } catch (error) {
       console.error('Erro ao buscar dados do board:', error);
       return null;
@@ -57,26 +134,29 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         return 'Desculpe, não consegui acessar os dados do board no momento.';
       }
 
-      // Os dados já vêm estruturados da view board_ai_view
+      // Os dados já vêm estruturados da função getBoardData
       const boardContext = {
         board: {
+          id: boardData.board_id,
           title: boardData.board_title,
           description: boardData.board_description,
-          owner: boardData.owner_name,
           created_at: boardData.board_created_at,
-          is_public: boardData.is_public
+          is_public: boardData.is_public,
+          owner: boardData.owner_name
         },
         columns: boardData.columns || [],
         tasks: boardData.tasks || [],
         comments: boardData.board_comments || [],
         messages: boardData.board_messages || [],
-        statistics: {
+        stats: {
           total_tasks: boardData.total_tasks || 0,
           total_columns: boardData.total_columns || 0,
           total_comments: boardData.total_comments || 0,
           total_messages: boardData.total_messages || 0
         }
       };
+
+
 
       // Resposta livre da IA baseada no contexto do board
       let response = '';
@@ -92,9 +172,9 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       
       // Resposta contextual e livre
       if (message.includes('tarefas') || message.includes('tasks') || message.includes('task')) {
-        const highPriorityTasks = boardContext.tasks.filter(t => t.priority === 'alta').length;
+        const highPriorityTasks = boardContext.tasks.filter(t => t.prioridade === 'alta').length;
         const tasksByColumn = boardContext.columns.map(col => ({
-          name: col.title,
+          name: col.titulo,
           count: boardContext.tasks.filter(t => t.column_id === col.id).length
         }));
         
@@ -113,24 +193,24 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         });
         
         // Análise adicional
-        const completedTasks = boardContext.tasks.filter(t => 
-          t.column_title && (t.column_title.toLowerCase().includes('concluí') || 
-          t.column_title.toLowerCase().includes('finaliz') || 
-          t.column_title.toLowerCase().includes('done'))
-        ).length;
+         const completedTasks = boardContext.tasks.filter(t => 
+           t.column_title && (t.column_title.toLowerCase().includes('concluí') || 
+           t.column_title.toLowerCase().includes('finaliz') || 
+           t.column_title.toLowerCase().includes('done'))
+         ).length;
         
         if (completedTasks > 0) {
           response += `\n✅ **${completedTasks} tarefa${completedTasks !== 1 ? 's já foram' : ' já foi'} concluída${completedTasks !== 1 ? 's' : ''}!**`;
         }
         
       } else if (message.includes('responsável') || message.includes('responsible') || message.includes('quem')) {
-        const responsibles = [...new Set(boardContext.tasks.map(t => t.responsible).filter(r => r && r !== 'Não atribuído'))];
+        const responsibles = [...new Set(boardContext.tasks.map(t => t.users?.nome || 'Não atribuído').filter(r => r && r !== 'Não atribuído'))];
         response = `👥 **Equipe e Responsabilidades**\n\n`;
         
         if (responsibles.length > 0) {
           response += `Temos **${responsibles.length} pessoa${responsibles.length !== 1 ? 's' : ''}** trabalhando neste projeto:\n\n`;
           responsibles.forEach(resp => {
-            const userTasks = boardContext.tasks.filter(t => t.responsible === resp);
+            const userTasks = boardContext.tasks.filter(t => t.users?.nome === resp);
             const taskCount = userTasks.length;
             response += `👤 **${resp}**: ${taskCount} tarefa${taskCount !== 1 ? 's' : ''}\n`;
             
@@ -138,7 +218,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
             if (userTasks.length > 0) {
               const sampleTasks = userTasks.slice(0, 2);
               sampleTasks.forEach(task => {
-                response += `   • ${task.title}\n`;
+                response += `   • ${task.titulo}\n`;
               });
               if (userTasks.length > 2) {
                 response += `   • ... e mais ${userTasks.length - 2} tarefa${userTasks.length - 2 !== 1 ? 's' : ''}\n`;
@@ -151,11 +231,11 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         }
         
       } else if (message.includes('prazo') || message.includes('entrega') || message.includes('deadline') || message.includes('quando')) {
-        const tasksWithDueDate = boardContext.tasks.filter(t => t.due_date);
+        const tasksWithDueDate = boardContext.tasks.filter(t => t.data_entrega);
         const now = new Date();
-        const overdueTasks = tasksWithDueDate.filter(t => new Date(t.due_date) < now);
+        const overdueTasks = tasksWithDueDate.filter(t => new Date(t.data_entrega) < now);
         const upcomingTasks = tasksWithDueDate.filter(t => {
-          const dueDate = new Date(t.due_date);
+          const dueDate = new Date(t.data_entrega);
           const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
           return diffDays >= 0 && diffDays <= 7;
         });
@@ -165,8 +245,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         if (overdueTasks.length > 0) {
           response += `🚨 **ATENÇÃO**: ${overdueTasks.length} tarefa${overdueTasks.length !== 1 ? 's estão' : ' está'} atrasada${overdueTasks.length !== 1 ? 's' : ''}:\n`;
           overdueTasks.forEach(task => {
-            const daysLate = Math.ceil((now.getTime() - new Date(task.due_date).getTime()) / (1000 * 3600 * 24));
-            response += `🔴 **${task.title}** - ${daysLate} dia${daysLate !== 1 ? 's' : ''} de atraso\n`;
+            const daysLate = Math.ceil((now.getTime() - new Date(task.data_entrega).getTime()) / (1000 * 3600 * 24));
+            response += `🔴 **${task.titulo}** - ${daysLate} dia${daysLate !== 1 ? 's' : ''} de atraso\n`;
           });
           response += `\n`;
         }
@@ -174,9 +254,9 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         if (upcomingTasks.length > 0) {
           response += `📅 **Próximos prazos (7 dias):**\n`;
           upcomingTasks.forEach(task => {
-            const dueDate = new Date(task.due_date);
+            const dueDate = new Date(task.data_entrega);
             const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
-            response += `🟡 **${task.title}** - ${diffDays === 0 ? 'hoje' : `${diffDays} dia${diffDays !== 1 ? 's' : ''}`}\n`;
+            response += `🟡 **${task.titulo}** - ${diffDays === 0 ? 'hoje' : `${diffDays} dia${diffDays !== 1 ? 's' : ''}`}\n`;
           });
         } else if (overdueTasks.length === 0) {
           response += `✅ Ótimas notícias! Não há prazos urgentes nos próximos 7 dias.`;
@@ -191,7 +271,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
           const recentComments = boardContext.comments.slice(-3);
           recentComments.forEach(comment => {
             const date = new Date(comment.created_at).toLocaleDateString();
-            response += `💭 **${comment.author}** (${date}):\n"${comment.content}"\n\n`;
+            response += `💭 **${comment.author_name}** (${date}):\n"${comment.content}"\n\n`;
           });
           
           if (boardContext.comments.length > 3) {
@@ -209,17 +289,17 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         }
         
         response += `📊 **Números do projeto:**\n`;
-        response += `• ${taskCount} tarefas em ${columnCount} colunas\n`;
-        response += `• ${commentCount} comentários da equipe\n`;
-        response += `• ${messageCount} mensagens no chat\n\n`;
+        response += `• ${boardContext.stats.total_tasks} tarefas em ${boardContext.stats.total_columns} colunas\n`;
+        response += `• ${boardContext.stats.total_comments} comentários da equipe\n`;
+        response += `• ${boardContext.stats.total_messages} mensagens no chat\n\n`;
         
         // Análise de progresso
         const totalTasks = boardContext.tasks.length;
         if (totalTasks > 0) {
           const completedColumn = boardContext.columns.find(col => 
-            col.title.toLowerCase().includes('concluí') || 
-            col.title.toLowerCase().includes('finaliz') || 
-            col.title.toLowerCase().includes('done')
+            col.titulo.toLowerCase().includes('concluí') || 
+            col.titulo.toLowerCase().includes('finaliz') || 
+            col.titulo.toLowerCase().includes('done')
           );
           
           if (completedColumn) {
@@ -243,7 +323,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         response += `• Responder qualquer pergunta sobre o board\n\n`;
         response += `🗣️ **Fale naturalmente comigo!** Pergunte qualquer coisa sobre:\n`;
         response += `"Qual tarefa é mais complexa?", "Quem está responsável por X?", "Como está o progresso?", etc.\n\n`;
-        response += `📋 **Sobre este projeto**: ${taskCount} tarefas, ${columnCount} colunas, ${commentCount} comentários`;
+        response += `📋 **Sobre este projeto**: ${boardContext.stats.total_tasks} tarefas, ${boardContext.stats.total_columns} colunas, ${boardContext.stats.total_comments} comentários`;
         
       } else {
         // Resposta livre e contextual para qualquer pergunta
@@ -252,14 +332,14 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         // Tentar dar uma resposta contextual baseada no conteúdo do board
         if (boardContext.tasks.length > 0) {
           response += `Com base no que vejo neste projeto:\n\n`;
-          response += `📋 Temos **${taskCount} tarefas** distribuídas em **${columnCount} colunas**\n`;
+          response += `📋 Temos **${boardContext.stats.total_tasks} tarefas** distribuídas em **${boardContext.stats.total_columns} colunas**\n`;
           
-          if (boardContext.tasks.some(t => t.priority === 'alta')) {
+          if (boardContext.tasks.some(t => t.prioridade === 'alta')) {
             response += `⚡ Algumas tarefas têm **prioridade alta** e merecem atenção\n`;
           }
           
-          if (commentCount > 0) {
-            response += `💬 A equipe está ativa com **${commentCount} comentário${commentCount !== 1 ? 's' : ''}**\n`;
+          if (boardContext.stats.total_comments > 0) {
+            response += `💬 A equipe está ativa com **${boardContext.stats.total_comments} comentário${boardContext.stats.total_comments !== 1 ? 's' : ''}**\n`;
           }
           
           response += `\n👥 A equipe também pode responder questões mais específicas.\n\n`;
