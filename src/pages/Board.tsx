@@ -175,7 +175,25 @@ const Board = () => {
         )
       )).filter(Boolean) as string[];
 
-      if (responsavelIds.length === 0) {
+      // Extrair IDs únicos dos participantes das tarefas
+      const taskIds = columns.flatMap(col => col.tasks.map(task => task.id));
+      let participantIds: string[] = [];
+      
+      if (taskIds.length > 0) {
+        const { data: participantsData } = await supabase
+          .from("task_participants")
+          .select("user_id")
+          .in("task_id", taskIds);
+        
+        participantIds = Array.from(new Set(
+          (participantsData || []).map(p => p.user_id)
+        ));
+      }
+
+      // Combinar responsáveis e participantes
+      const allUserIds = Array.from(new Set([...responsavelIds, ...participantIds]));
+
+      if (allUserIds.length === 0) {
         setTeamMembers([]);
         return;
       }
@@ -183,7 +201,7 @@ const Board = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, nome, foto_perfil")
-        .in("id", responsavelIds);
+        .in("id", allUserIds);
 
       if (error) throw error;
       setTeamMembers(data || []);

@@ -118,9 +118,9 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                 
                 {/* Indicadores de participantes */}
                 <div className="flex items-center gap-1">
-                  {/* Responsável da tarefa */}
+                  {/* Responsável da tarefa (se definido no campo responsavel_id) */}
                   {responsavel && (
-                    <Avatar className="w-6 h-6 border-2 border-primary">
+                    <Avatar className="w-6 h-6 border-2 border-primary" title={`${responsavel.nome} (Responsável)`}>
                       <AvatarImage src={responsavel.foto_perfil || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
                         {responsavel.nome.charAt(0).toUpperCase()}
@@ -128,24 +128,43 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                     </Avatar>
                   )}
                   
-                  {/* Participantes da tarefa */}
-                  {participants.slice(0, 3).map((participant) => (
-                    <Avatar key={participant.id} className="w-6 h-6 border-2 border-background">
-                      <AvatarImage src={participant.user.foto_perfil || undefined} />
-                      <AvatarFallback className="bg-muted text-muted-foreground text-[10px]">
-                        {participant.user.nome.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
+                  {/* Participantes da tarefa (excluindo o responsável se já foi mostrado) */}
+                  {participants
+                    .filter(participant => participant.user_id !== task.responsavel_id)
+                    .slice(0, responsavel ? 2 : 3)
+                    .map((participant) => (
+                      <Avatar 
+                        key={participant.id} 
+                        className={`w-6 h-6 border-2 ${
+                          participant.role === 'responsible' ? 'border-primary' : 'border-background'
+                        }`}
+                        title={`${participant.user.nome} (${participant.role === 'responsible' ? 'Responsável' : 'Participante'})`}
+                      >
+                        <AvatarImage src={participant.user.foto_perfil || undefined} />
+                        <AvatarFallback className={`text-[10px] ${
+                          participant.role === 'responsible' 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {participant.user.nome.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
                   
                   {/* Contador de participantes adicionais */}
-                  {participants.length > 3 && (
-                    <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
-                      <span className="text-[10px] font-medium text-muted-foreground">
-                        +{participants.length - 3}
-                      </span>
-                    </div>
-                  )}
+                  {(() => {
+                    const filteredParticipants = participants.filter(p => p.user_id !== task.responsavel_id);
+                    const maxVisible = responsavel ? 2 : 3;
+                    const remaining = filteredParticipants.length - maxVisible;
+                    
+                    return remaining > 0 && (
+                      <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          +{remaining}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
