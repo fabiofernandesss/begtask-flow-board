@@ -614,6 +614,18 @@ const Board = () => {
 
     setChatHistory(prev => [...prev, newUserMessage]);
 
+    // Salvar pergunta no localStorage para histórico de perguntas
+    const savedQuestions = JSON.parse(localStorage.getItem(`board_questions_${id}`) || '[]');
+    savedQuestions.push({
+      question: userMessage,
+      timestamp: new Date().toISOString(),
+    });
+    // Manter apenas as últimas 50 perguntas
+    if (savedQuestions.length > 50) {
+      savedQuestions.splice(0, savedQuestions.length - 50);
+    }
+    localStorage.setItem(`board_questions_${id}`, JSON.stringify(savedQuestions));
+
     try {
       // Generate AI response
       const aiResponse = await generateAIResponse(userMessage);
@@ -626,24 +638,6 @@ const Board = () => {
       };
 
       setChatHistory(prev => [...prev, newAIMessage]);
-
-      // Save both messages to database
-      await Promise.all([
-        supabase.from("board_messages").insert({
-          board_id: id,
-          sender_name: 'Usuário',
-          sender_type: 'internal',
-          message_content: userMessage,
-          is_public: false,
-        }),
-        supabase.from("board_messages").insert({
-          board_id: id,
-          sender_name: 'IA Assistente',
-          sender_type: 'ai',
-          message_content: aiResponse,
-          is_public: false,
-        }),
-      ]);
 
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
@@ -737,35 +731,13 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
     }
   };
 
-  const loadChatHistory = async () => {
-    try {
-      // Carregar apenas as últimas 50 mensagens para evitar sobrecarga
-      const { data, error } = await supabase
-        .from("board_messages")
-        .select("id, sender_name, sender_type, message_content, created_at, is_public")
-        .eq("board_id", id)
-        .eq("is_public", false)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      // Reverter a ordem para mostrar mensagens mais antigas primeiro
-      const sortedData = (data || []).reverse();
-
-      const messages = sortedData.map((msg: any) => ({
-        id: msg.id,
-        content: msg.message_content,
-        sender: msg.sender_type === 'ai' ? 'ai' : 'user',
-        timestamp: msg.created_at,
-      }));
-
-      setBoardMessages(sortedData);
-      setChatHistory(messages);
-    } catch (error) {
-      console.error("Erro ao carregar histórico do chat:", error);
+  // Limpar chat a cada nova sessão
+  useEffect(() => {
+    if (id) {
+      setChatHistory([]);
+      setBoardMessages([]);
     }
-  };
+  }, [id]);
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
@@ -773,13 +745,6 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatHistory]);
-
-  // Load chat history on component mount
-  useEffect(() => {
-    if (id) {
-      loadChatHistory();
-    }
-  }, [id]);
 
   if (loading) {
     return (

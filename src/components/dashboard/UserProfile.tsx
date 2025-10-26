@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ProfileSettingsModal from "./ProfileSettingsModal";
 
 interface Profile {
   nome: string;
@@ -20,6 +21,7 @@ interface Profile {
 
 const UserProfile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,32 +55,44 @@ const UserProfile = () => {
       .substring(0, 2);
   };
 
+  const handleProfileUpdated = () => {
+    fetchProfile(); // Recarrega o perfil após atualização
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-          <AvatarImage src={profile?.foto_perfil || undefined} />
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            {profile?.nome ? getInitials(profile.nome) : <User className="w-4 h-4" />}
-          </AvatarFallback>
-        </Avatar>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{profile?.nome || "Usuário"}</p>
-            <p className="text-xs leading-none text-muted-foreground capitalize">
-              Status: {profile?.status || "carregando..."}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Configurações</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+            <AvatarImage src={profile?.foto_perfil || undefined} />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {profile?.nome ? getInitials(profile.nome) : <User className="w-4 h-4" />}
+            </AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{profile?.nome || "Usuário"}</p>
+              <p className="text-xs leading-none text-muted-foreground capitalize">
+                Status: {profile?.status || "carregando..."}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Configurações</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ProfileSettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onProfileUpdated={handleProfileUpdated}
+      />
+    </>
   );
 };
 
