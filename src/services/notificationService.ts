@@ -46,11 +46,23 @@ class NotificationService {
 
   private async callEdgeFunction(request: NotificationRequest): Promise<NotificationResponse> {
     try {
+      console.log("🔧 CallEdgeFunction iniciado");
+      console.log("📋 Request:", JSON.stringify(request, null, 2));
+      
       // Verificar se o usuário está autenticado
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      console.log("🔐 Verificação de sessão:");
+      console.log("  - Session exists:", !!session);
+      console.log("  - Session error:", sessionError);
+      
+      if (sessionError) {
+        console.error("❌ Erro ao obter sessão:", sessionError);
+        throw new Error(`Erro de sessão: ${sessionError.message}`);
+      }
       
       if (!session) {
-        console.warn('User not authenticated, skipping notification');
+        console.warn('❌ User not authenticated, skipping notification');
         // Retornar uma resposta de sucesso falso para não quebrar o fluxo
         return {
           success: false,
@@ -61,17 +73,24 @@ class NotificationService {
         };
       }
 
+      console.log("📤 Chamando Edge Function send-notifications...");
       const { data, error } = await supabase.functions.invoke('send-notifications', {
         body: request,
       });
 
+      console.log("📥 Resposta da Edge Function:");
+      console.log("  - Data:", data);
+      console.log("  - Error:", error);
+
       if (error) {
+        console.error("❌ Erro na Edge Function:", error);
         throw error;
       }
 
+      console.log("✅ CallEdgeFunction concluído com sucesso");
       return data;
     } catch (error) {
-      console.error('Error calling notification edge function:', error);
+      console.error('❌ Error calling notification edge function:', error);
       throw error;
     }
   }
@@ -293,6 +312,13 @@ class NotificationService {
     fromColumn: string,
     toColumn: string
   ): Promise<void> {
+    console.log("🚀 NotificationService.sendTaskMovedNotification iniciado");
+    console.log("📞 Telefone:", phone);
+    console.log("📧 Email:", email);
+    console.log("👤 Nome:", responsavelNome);
+    console.log("📋 Tarefa:", taskTitle);
+    console.log("🔄 De:", fromColumn, "Para:", toColumn);
+    
     const whatsappMessage = `📋 *Tarefa Movida*\n\nOlá ${responsavelNome}!\n\nSua tarefa foi movida:\n\n📋 *${taskTitle}*\n\nDe: ${fromColumn}\nPara: ${toColumn}\n\n✅ BegTask - Gestão de Tarefas`;
     
     const emailSubject = `Tarefa Movida: ${taskTitle}`;
@@ -311,12 +337,23 @@ class NotificationService {
       </div>
     `;
 
-    if (phone && email) {
-      await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
-    } else if (phone) {
-      await this.sendWhatsApp(phone, whatsappMessage);
-    } else if (email) {
-      await this.sendEmail(email, emailSubject, emailHtml);
+    try {
+      if (phone && email) {
+        console.log("📱📧 Enviando para ambos: telefone e email");
+        await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
+      } else if (phone) {
+        console.log("📱 Enviando apenas WhatsApp");
+        await this.sendWhatsApp(phone, whatsappMessage);
+      } else if (email) {
+        console.log("📧 Enviando apenas email");
+        await this.sendEmail(email, emailSubject, emailHtml);
+      } else {
+        console.log("⚠️ Nenhum meio de contato disponível");
+      }
+      console.log("✅ NotificationService.sendTaskMovedNotification concluído com sucesso");
+    } catch (error) {
+      console.error("❌ Erro em NotificationService.sendTaskMovedNotification:", error);
+      throw error;
     }
   }
 
