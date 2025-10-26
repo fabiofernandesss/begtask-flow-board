@@ -763,27 +763,48 @@ const PublicBoard = () => {
 
       const prompt = `Você é um assistente de IA ajudando no projeto "${board?.titulo}".\n\nContexto do projeto:\n${JSON.stringify(boardContext, null, 2)}\n\nPergunta do usuário: ${userMessage}\n\nResponda de forma útil. Se a pergunta não estiver diretamente relacionada ao projeto, responda mesmo assim de forma geral, e quando possível conecte com o projeto.`;
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: "Você é um assistente útil e conciso. Dê respostas claras em português." },
-            { role: "user", content: prompt }
-          ],
-          max_tokens: 500,
-          temperature: 0.7,
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 1,
+            topP: 1,
+            maxOutputTokens: 500,
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         }),
       });
 
       let aiResponseText = "Não consegui gerar uma resposta agora.";
       if (response.ok) {
         const data = await response.json();
-        aiResponseText = data.choices[0]?.message?.content || aiResponseText;
+        aiResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || aiResponseText;
       }
 
       // Salvar resposta da IA
