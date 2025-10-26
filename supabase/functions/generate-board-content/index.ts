@@ -1,28 +1,27 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
-serve(async (req) => {
+interface GenerateRequest {
+  type: 'columns' | 'tasks' | 'columns_with_tasks';
+  context: string;
+  columnTitle?: string;
+}
+
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
+      },
+    });
   }
 
   try {
-    console.log('Iniciando geração de conteúdo com IA...');
-    const { prompt, type } = await req.json();
-    console.log('Parâmetros recebidos:', { prompt: prompt?.substring(0, 100), type });
-    
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY não encontrada nas variáveis de ambiente');
-      throw new Error('GEMINI_API_KEY não configurada');
-    }
-    
-    console.log('GEMINI_API_KEY encontrada, prosseguindo...');
+    const { type, context, columnTitle }: GenerateRequest = await req.json();
 
     let systemPrompt = '';
     if (type === 'columns') {
@@ -33,66 +32,66 @@ serve(async (req) => {
       systemPrompt = 'Você é um especialista em processos gerenciais que gera tarefas específicas para uma área/categoria do projeto. Crie tarefas profissionais e bem estruturadas. Retorne APENAS um array JSON com 3-7 objetos contendo "titulo" (string concisa), "descricao" (string detalhada com 2-5 linhas explicando objetivos, metodologia e entregáveis esperados), "prioridade" ("baixa"|"media"|"alta"). As descrições devem ser profissionais, contextualizadas e orientadas a resultados. Exemplo: [{"titulo":"Implementar sistema de autenticação","descricao":"Desenvolver sistema completo de autenticação incluindo registro, login, recuperação de senha e gestão de sessões. Implementar medidas de segurança como criptografia de senhas, validação de tokens e proteção contra ataques. Criar documentação técnica e testes automatizados para garantir a qualidade e confiabilidade do sistema.","prioridade":"alta"}]';
     }
 
-    console.log('Fazendo chamada para API do Gemini...');
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `${systemPrompt}\n\nContexto do usuário: ${prompt}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          }
-        })
-      }
-    );
-    
-    console.log('Resposta da API do Gemini recebida:', response.status);
+    let userPrompt = '';
+    if (type === 'columns') {
+      userPrompt = `Contexto do projeto: ${context}`;
+    } else if (type === 'columns_with_tasks') {
+      userPrompt = `Contexto do projeto: ${context}`;
+    } else if (type === 'tasks') {
+      userPrompt = `Contexto do projeto: ${context}. Gere tarefas para a área/categoria: ${columnTitle}`;
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Gemini API error:', error);
-      throw new Error(`Erro na API do Gemini: ${response.status}`);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Dados recebidos da API do Gemini:', JSON.stringify(data).substring(0, 200));
-    
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    console.log('Texto gerado:', generatedText.substring(0, 200));
-    
-    // Extract JSON from markdown code blocks if present
-    let jsonText = generatedText.trim();
-    if (jsonText.includes('```json')) {
-      jsonText = jsonText.split('```json')[1].split('```')[0].trim();
-    } else if (jsonText.includes('```')) {
-      jsonText = jsonText.split('```')[1].split('```')[0].trim();
-    }
-    
-    console.log('JSON extraído:', jsonText.substring(0, 200));
-    const parsedData = JSON.parse(jsonText);
-    console.log('Dados parseados com sucesso, retornando...');
+    const content = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ data: parsedData }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Parse the JSON response
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', content);
+      throw new Error('Invalid JSON response from OpenAI');
+    }
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
+
   } catch (error) {
-    console.error('Error in generate-board-content:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
       }
     );
   }
