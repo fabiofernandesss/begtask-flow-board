@@ -333,20 +333,10 @@ const PublicBoard = () => {
         return;
       }
 
-      // Buscar participantes das tarefas com perfis dos usuários
+      // Buscar participantes das tarefas
       const { data: participantsData, error: participantsError } = await supabase
         .from("task_participants")
-        .select(`
-          id,
-          task_id,
-          user_id,
-          role,
-          user:profiles!task_participants_user_id_fkey(
-            id,
-            nome,
-            foto_perfil
-          )
-        `)
+        .select("id, task_id, user_id, role")
         .in("task_id", taskIds);
 
       if (participantsError) {
@@ -354,8 +344,38 @@ const PublicBoard = () => {
         setTaskParticipants([]);
         return;
       }
+
+      if (!participantsData || participantsData.length === 0) {
+        setTaskParticipants([]);
+        return;
+      }
+
+      // Obter IDs únicos dos usuários
+      const userIds = [...new Set(participantsData.map(p => p.user_id))];
+
+      // Buscar perfis dos usuários
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, nome, foto_perfil")
+        .in("id", userIds);
+
+      if (profilesError) {
+        console.error("Erro na consulta de perfis:", profilesError);
+        setTaskParticipants([]);
+        return;
+      }
+
+      // Combinar dados dos participantes com perfis
+      const participantsWithProfiles = participantsData.map(participant => ({
+        ...participant,
+        user: profilesData?.find(profile => profile.id === participant.user_id) || {
+          id: participant.user_id,
+          nome: "Usuário não encontrado",
+          foto_perfil: null
+        }
+      }));
       
-      setTaskParticipants(participantsData || []);
+      setTaskParticipants(participantsWithProfiles);
     } catch (error: any) {
       console.error("Erro ao carregar participantes das tarefas:", error);
       setTaskParticipants([]);
@@ -797,43 +817,6 @@ const PublicBoard = () => {
     }
   };
 
-  const updateProject = async () => {
-    setIsLoading(true);
-    try {
-      // Chamar a Edge Function de vetorização (não precisa de autenticação para boards públicos)
-      const { data, error } = await supabase.functions.invoke('vectorize-board', {
-        body: { board_id: id }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Falha na vetorização');
-      }
-      
-      toast({
-        title: "Projeto Atualizado",
-        description: "O conteúdo do projeto foi vetorizado com sucesso!",
-      });
-      
-      setChatHistory(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Projeto atualizado! Agora posso responder perguntas mais específicas sobre o conteúdo atual do board.' 
-      }]);
-    } catch (error) {
-      console.error("Erro ao atualizar projeto:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o projeto. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1201,24 +1184,6 @@ const PublicBoard = () => {
             
             {/* Elemento invisível para auto-scroll */}
             <div ref={messagesEndRef} />
-          </div>
-
-          {/* Botão Atualizar Projeto */}
-          <div className="px-4 pb-2 shrink-0 border-t bg-muted/20">
-            <Button
-              onClick={updateProject}
-              disabled={isLoading}
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-            >
-              {isLoading ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
-              )}
-              Atualizar Projeto
-            </Button>
           </div>
 
           {/* Área de input */}

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, MessageCircle, Send, Bot, User, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
@@ -13,6 +15,7 @@ import ListView from "@/components/board/ListView";
 import CommentsSection from "@/components/board/CommentsSection";
 import { AIChat } from "@/components/board/AIChat";
 import { notificationService } from "@/services/notificationService";
+import ReactMarkdown from "react-markdown";
 
 interface Board {
   id: string;
@@ -67,6 +70,22 @@ const Board = () => {
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
+  
+  // Chat states
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  const [boardMessages, setBoardMessages] = useState<Array<{
+    id: string;
+    sender_type: 'client' | 'internal' | 'ai';
+    sender_name: string;
+    message_content: string;
+    created_at: string;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Ref para auto-scroll do chat
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     checkAuth();
@@ -485,6 +504,165 @@ const Board = () => {
     fetchColumns();
   };
 
+  // Chat functions
+  const sendChatMessage = async () => {
+    if (!chatMessage.trim() || isLoading) return;
+
+    const userMessage = chatMessage.trim();
+    setChatMessage("");
+    setIsLoading(true);
+
+    // Add user message to chat history
+    const newUserMessage = {
+      id: Date.now().toString(),
+      content: userMessage,
+      sender: "user" as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    setChatHistory(prev => [...prev, newUserMessage]);
+
+    try {
+      // Generate AI response
+      const aiResponse = await generateAIResponse(userMessage);
+      
+      const newAIMessage = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponse,
+        sender: "ai" as const,
+        timestamp: new Date().toISOString(),
+      };
+
+      setChatHistory(prev => [...prev, newAIMessage]);
+
+      // Save both messages to database
+      await Promise.all([
+        supabase.from("board_messages").insert({
+          board_id: id,
+          content: userMessage,
+          sender: "user",
+        }),
+        supabase.from("board_messages").insert({
+          board_id: id,
+          content: aiResponse,
+          sender: "ai",
+        }),
+      ]);
+
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateAIResponse = async (userMessage: string): Promise<string> => {
+    try {
+      // Prepare board context
+      const boardContext = {
+        titulo: board?.titulo,
+        descricao: board?.descricao,
+        colunas: columns.map(col => ({
+          titulo: col.titulo,
+          tarefas: col.tasks.map(task => ({
+            titulo: task.titulo,
+            descricao: task.descricao,
+            prioridade: task.prioridade,
+            data_entrega: task.data_entrega,
+          })),
+        })),
+        membros: teamMembers.map(member => ({
+          nome: member.nome,
+        })),
+      };
+
+      const prompt = `Você é um assistente de IA especializado em gestão de projetos. Você está ajudando com o projeto "${board?.titulo}".
+
+Contexto do projeto:
+${JSON.stringify(boardContext, null, 2)}
+
+Pergunta do usuário: ${userMessage}
+
+Responda de forma útil e específica sobre o projeto, suas tarefas, progresso ou sugestões de melhoria. Seja conciso mas informativo.`;
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "Você é um assistente especializado em gestão de projetos. Seja útil, conciso e focado no contexto do projeto fornecido.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro na API do OpenAI");
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "Desculpe, não consegui gerar uma resposta no momento.";
+    } catch (error) {
+      console.error("Erro ao gerar resposta da IA:", error);
+      return "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.";
+    }
+  };
+
+  const loadChatHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("board_messages")
+        .select("*")
+        .eq("board_id", id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const messages = (data || []).map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.sender,
+        timestamp: msg.created_at,
+      }));
+
+      setBoardMessages(messages);
+      setChatHistory(messages);
+    } catch (error) {
+      console.error("Erro ao carregar histórico do chat:", error);
+    }
+  };
+
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatHistory]);
+
+  // Load chat history on component mount
+  useEffect(() => {
+    if (id) {
+      loadChatHistory();
+    }
+  }, [id]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -629,7 +807,115 @@ const Board = () => {
         onUpdate={handleTaskUpdate}
       />
 
-      <AIChat boardId={id!} isPublic={false} />
+      {/* Floating Chat Button */}
+      <Button
+        onClick={() => setIsChatOpen(true)}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50"
+        size="icon"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </Button>
+
+      {/* Chat Modal */}
+      <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+        <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col p-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              Assistente IA - {board?.titulo}
+            </DialogTitle>
+            <DialogDescription>
+              Converse com a IA sobre seu projeto
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {chatHistory.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Olá! Sou seu assistente de IA.</p>
+                <p>Como posso ajudar com seu projeto hoje?</p>
+              </div>
+            ) : (
+              chatHistory.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${
+                    message.sender === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {message.sender === "ai" && (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[80%] rounded-lg p-3 ${
+                      message.sender === "user"
+                        ? "bg-primary text-primary-foreground ml-auto"
+                        : "bg-muted"
+                    }`}
+                  >
+                    {message.sender === "ai" ? (
+                      <ReactMarkdown className="prose prose-sm max-w-none dark:prose-invert">
+                        {message.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-sm">{message.content}</p>
+                    )}
+                  </div>
+                  {message.sender === "user" && (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+            {isLoading && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Bot className="h-4 w-4 text-primary" />
+                </div>
+                <div className="bg-muted rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Pensando...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <div className="p-4 border-t">
+            <div className="flex gap-2">
+              <Textarea
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Digite sua mensagem..."
+                className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                  }
+                }}
+              />
+              <Button
+                onClick={sendChatMessage}
+                disabled={!chatMessage.trim() || isLoading}
+                size="icon"
+                className="h-10 w-10"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

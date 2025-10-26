@@ -78,95 +78,201 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         }
       };
 
-      // Simular resposta da IA baseada no contexto estruturado
+      // Resposta livre da IA baseada no contexto do board
       let response = '';
       
-      if (userMessage.toLowerCase().includes('tarefas') || userMessage.toLowerCase().includes('tasks')) {
-        const taskCount = boardContext.statistics.total_tasks;
+      // Análise inteligente da mensagem do usuário
+      const message = userMessage.toLowerCase();
+      
+      // Informações disponíveis do board
+      const taskCount = boardContext.statistics.total_tasks;
+      const columnCount = boardContext.statistics.total_columns;
+      const commentCount = boardContext.statistics.total_comments;
+      const messageCount = boardContext.statistics.total_messages;
+      
+      // Resposta contextual e livre
+      if (message.includes('tarefas') || message.includes('tasks') || message.includes('task')) {
         const highPriorityTasks = boardContext.tasks.filter(t => t.priority === 'alta').length;
         const tasksByColumn = boardContext.columns.map(col => ({
           name: col.title,
           count: boardContext.tasks.filter(t => t.column_id === col.id).length
         }));
         
-        response = `📋 **Resumo das Tarefas**\n\n`;
-        response += `Este board possui **${taskCount} tarefas** no total.\n\n`;
-        response += `📊 **Distribuição por coluna:**\n\n`;
-        tasksByColumn.forEach(col => {
-          response += `🟢 **${col.name}**: ${col.count} tarefa${col.count !== 1 ? 's' : ''}\n`;
-        });
+        response = `📋 **Análise das Tarefas**\n\n`;
+        response += `Temos **${taskCount} tarefas** neste projeto. `;
+        
         if (highPriorityTasks > 0) {
-          response += `\n⚡ **${highPriorityTasks} tarefa${highPriorityTasks !== 1 ? 's' : ''} com prioridade alta**`;
-        }
-        response += `\n\n💡 *Clique nas tarefas para ver mais detalhes!*`;
-        
-      } else if (userMessage.toLowerCase().includes('responsável') || userMessage.toLowerCase().includes('responsible')) {
-        const responsibles = [...new Set(boardContext.tasks.map(t => t.responsible).filter(r => r && r !== 'Não atribuído'))];
-        response = `👥 **Responsáveis pelas tarefas:**\n\n`;
-        if (responsibles.length > 0) {
-          responsibles.forEach(resp => {
-            const taskCount = boardContext.tasks.filter(t => t.responsible === resp).length;
-            response += `• **${resp}**: ${taskCount} tarefa${taskCount !== 1 ? 's' : ''}\n`;
-          });
+          response += `Destaque para **${highPriorityTasks} tarefa${highPriorityTasks !== 1 ? 's' : ''} de alta prioridade** que merecem atenção especial.\n\n`;
         } else {
-          response += `Nenhum responsável foi definido para as tarefas.`;
+          response += `Nenhuma tarefa está marcada como alta prioridade no momento.\n\n`;
         }
         
-      } else if (userMessage.toLowerCase().includes('prazo') || userMessage.toLowerCase().includes('entrega')) {
-        const tasksWithDueDate = boardContext.tasks.filter(t => t.due_date);
-        response = `⏰ **Status dos Prazos**\n\n`;
-        if (tasksWithDueDate.length > 0) {
-          response += `${tasksWithDueDate.length} tarefa${tasksWithDueDate.length !== 1 ? 's têm' : ' tem'} prazo definido:\n\n`;
-          tasksWithDueDate.forEach(task => {
-            const dueDate = new Date(task.due_date);
-            const isOverdue = dueDate < new Date();
-            response += `${isOverdue ? '🔴' : '🟡'} **${task.title}**: ${dueDate.toLocaleDateString()}\n`;
-          });
-        } else {
-          response += `✅ Não há tarefas atrasadas no momento.\n\n💡 *Clique nas tarefas individuais para verificar os prazos.*`;
-        }
-        
-      } else if (userMessage.toLowerCase().includes('comentários') || userMessage.toLowerCase().includes('comments')) {
-        const commentCount = boardContext.statistics.total_comments;
-        response = `💬 **Comentários do Board**\n\n`;
-        response += `Há **${commentCount} comentário${commentCount !== 1 ? 's' : ''}** neste board.\n\n`;
-        if (boardContext.comments.length > 0) {
-          response += `📝 **Últimos comentários:**\n\n`;
-          boardContext.comments.slice(-3).forEach(comment => {
-            const date = new Date(comment.created_at).toLocaleDateString();
-            response += `• **${comment.author}** (${date}): "${comment.content}"\n`;
-          });
-        }
-        
-      } else if (userMessage.toLowerCase().includes('resumo') || userMessage.toLowerCase().includes('overview')) {
-        response = `🎯 **Resumo do Board**\n\n`;
-        response += `📋 Este board possui **${boardContext.statistics.total_tasks} tarefas** no total.\n\n`;
-        response += `📊 **Distribuição por coluna:**\n\n`;
-        boardContext.columns.forEach(col => {
-          const taskCount = boardContext.tasks.filter(t => t.column_id === col.id).length;
-          response += `🟢 **${col.title}**: ${taskCount} tarefa${taskCount !== 1 ? 's' : ''}\n`;
+        response += `📊 **Distribuição por coluna:**\n`;
+        tasksByColumn.forEach(col => {
+          response += `• **${col.name}**: ${col.count} tarefa${col.count !== 1 ? 's' : ''}\n`;
         });
-        response += `\n💡 *Clique nas tarefas para ver mais detalhes!*`;
         
-      } else if (userMessage.toLowerCase().includes('projeto') || userMessage.toLowerCase().includes('board')) {
-        response = `🏗️ **Sobre o Projeto**\n\n`;
+        // Análise adicional
+        const completedTasks = boardContext.tasks.filter(t => 
+          t.column_title && (t.column_title.toLowerCase().includes('concluí') || 
+          t.column_title.toLowerCase().includes('finaliz') || 
+          t.column_title.toLowerCase().includes('done'))
+        ).length;
+        
+        if (completedTasks > 0) {
+          response += `\n✅ **${completedTasks} tarefa${completedTasks !== 1 ? 's já foram' : ' já foi'} concluída${completedTasks !== 1 ? 's' : ''}!**`;
+        }
+        
+      } else if (message.includes('responsável') || message.includes('responsible') || message.includes('quem')) {
+        const responsibles = [...new Set(boardContext.tasks.map(t => t.responsible).filter(r => r && r !== 'Não atribuído'))];
+        response = `👥 **Equipe e Responsabilidades**\n\n`;
+        
+        if (responsibles.length > 0) {
+          response += `Temos **${responsibles.length} pessoa${responsibles.length !== 1 ? 's' : ''}** trabalhando neste projeto:\n\n`;
+          responsibles.forEach(resp => {
+            const userTasks = boardContext.tasks.filter(t => t.responsible === resp);
+            const taskCount = userTasks.length;
+            response += `👤 **${resp}**: ${taskCount} tarefa${taskCount !== 1 ? 's' : ''}\n`;
+            
+            // Mostrar algumas tarefas
+            if (userTasks.length > 0) {
+              const sampleTasks = userTasks.slice(0, 2);
+              sampleTasks.forEach(task => {
+                response += `   • ${task.title}\n`;
+              });
+              if (userTasks.length > 2) {
+                response += `   • ... e mais ${userTasks.length - 2} tarefa${userTasks.length - 2 !== 1 ? 's' : ''}\n`;
+              }
+            }
+            response += `\n`;
+          });
+        } else {
+          response += `Ainda não há responsáveis definidos para as tarefas. É uma boa hora para organizar a equipe! 🎯`;
+        }
+        
+      } else if (message.includes('prazo') || message.includes('entrega') || message.includes('deadline') || message.includes('quando')) {
+        const tasksWithDueDate = boardContext.tasks.filter(t => t.due_date);
+        const now = new Date();
+        const overdueTasks = tasksWithDueDate.filter(t => new Date(t.due_date) < now);
+        const upcomingTasks = tasksWithDueDate.filter(t => {
+          const dueDate = new Date(t.due_date);
+          const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+          return diffDays >= 0 && diffDays <= 7;
+        });
+        
+        response = `⏰ **Gestão de Prazos**\n\n`;
+        
+        if (overdueTasks.length > 0) {
+          response += `🚨 **ATENÇÃO**: ${overdueTasks.length} tarefa${overdueTasks.length !== 1 ? 's estão' : ' está'} atrasada${overdueTasks.length !== 1 ? 's' : ''}:\n`;
+          overdueTasks.forEach(task => {
+            const daysLate = Math.ceil((now.getTime() - new Date(task.due_date).getTime()) / (1000 * 3600 * 24));
+            response += `🔴 **${task.title}** - ${daysLate} dia${daysLate !== 1 ? 's' : ''} de atraso\n`;
+          });
+          response += `\n`;
+        }
+        
+        if (upcomingTasks.length > 0) {
+          response += `📅 **Próximos prazos (7 dias):**\n`;
+          upcomingTasks.forEach(task => {
+            const dueDate = new Date(task.due_date);
+            const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+            response += `🟡 **${task.title}** - ${diffDays === 0 ? 'hoje' : `${diffDays} dia${diffDays !== 1 ? 's' : ''}`}\n`;
+          });
+        } else if (overdueTasks.length === 0) {
+          response += `✅ Ótimas notícias! Não há prazos urgentes nos próximos 7 dias.`;
+        }
+        
+      } else if (message.includes('comentário') || message.includes('comment') || message.includes('conversa') || message.includes('discussão')) {
+        response = `💬 **Atividade e Discussões**\n\n`;
+        response += `Há **${commentCount} comentário${commentCount !== 1 ? 's' : ''}** e **${messageCount} mensagem${messageCount !== 1 ? 's' : ''}** neste projeto.\n\n`;
+        
+        if (boardContext.comments && boardContext.comments.length > 0) {
+          response += `📝 **Últimas discussões:**\n\n`;
+          const recentComments = boardContext.comments.slice(-3);
+          recentComments.forEach(comment => {
+            const date = new Date(comment.created_at).toLocaleDateString();
+            response += `💭 **${comment.author}** (${date}):\n"${comment.content}"\n\n`;
+          });
+          
+          if (boardContext.comments.length > 3) {
+            response += `... e mais ${boardContext.comments.length - 3} comentário${boardContext.comments.length - 3 !== 1 ? 's' : ''} anterior${boardContext.comments.length - 3 !== 1 ? 'es' : ''}.`;
+          }
+        } else {
+          response += `Ainda não há comentários. Que tal começar uma discussão sobre o projeto? 🗣️`;
+        }
+        
+      } else if (message.includes('resumo') || message.includes('overview') || message.includes('geral') || message.includes('status')) {
+        response = `🎯 **Visão Geral do Projeto**\n\n`;
         response += `📋 **${boardContext.board.title}**\n`;
-        response += `📝 ${boardContext.board.description}\n\n`;
-        response += `👤 **Proprietário:** ${boardContext.board.owner}\n`;
-        response += `🌐 **Tipo:** ${boardContext.board.is_public ? 'Público' : 'Privado'}\n`;
-        response += `📅 **Criado em:** ${new Date(boardContext.board.created_at).toLocaleDateString()}\n\n`;
-        response += `📊 **Estatísticas:**\n`;
-        response += `• ${boardContext.statistics.total_tasks} tarefas\n`;
-        response += `• ${boardContext.statistics.total_columns} colunas\n`;
-        response += `• ${boardContext.statistics.total_comments} comentários\n`;
-        response += `• ${boardContext.statistics.total_messages} mensagens no chat`;
+        if (boardContext.board.description) {
+          response += `📝 ${boardContext.board.description}\n\n`;
+        }
+        
+        response += `📊 **Números do projeto:**\n`;
+        response += `• ${taskCount} tarefas em ${columnCount} colunas\n`;
+        response += `• ${commentCount} comentários da equipe\n`;
+        response += `• ${messageCount} mensagens no chat\n\n`;
+        
+        // Análise de progresso
+        const totalTasks = boardContext.tasks.length;
+        if (totalTasks > 0) {
+          const completedColumn = boardContext.columns.find(col => 
+            col.title.toLowerCase().includes('concluí') || 
+            col.title.toLowerCase().includes('finaliz') || 
+            col.title.toLowerCase().includes('done')
+          );
+          
+          if (completedColumn) {
+            const completedTasks = boardContext.tasks.filter(t => t.column_id === completedColumn.id).length;
+            const progress = Math.round((completedTasks / totalTasks) * 100);
+            response += `📈 **Progresso**: ${progress}% concluído (${completedTasks}/${totalTasks} tarefas)\n\n`;
+          }
+        }
+        
+        response += `👤 **Criado por**: ${boardContext.board.owner}\n`;
+        response += `📅 **Data de criação**: ${new Date(boardContext.board.created_at).toLocaleDateString()}`;
+        
+      } else if (message.includes('ajuda') || message.includes('help') || message.includes('o que') || message.includes('como')) {
+        response = `🤖 **Assistente IA do Board**\n\n`;
+        response += `Olá! Sou seu assistente inteligente e posso ajudar com qualquer coisa sobre este projeto.\n\n`;
+        response += `💡 **Algumas coisas que posso fazer:**\n`;
+        response += `• Analisar tarefas e responsabilidades\n`;
+        response += `• Verificar prazos e deadlines\n`;
+        response += `• Resumir discussões e comentários\n`;
+        response += `• Dar visão geral do progresso\n`;
+        response += `• Responder qualquer pergunta sobre o board\n\n`;
+        response += `🗣️ **Fale naturalmente comigo!** Pergunte qualquer coisa sobre:\n`;
+        response += `"Qual tarefa é mais complexa?", "Quem está responsável por X?", "Como está o progresso?", etc.\n\n`;
+        response += `📋 **Sobre este projeto**: ${taskCount} tarefas, ${columnCount} colunas, ${commentCount} comentários`;
         
       } else {
-        response = `👋 **Olá! Sou a IA assistente deste board.**\n\n`;
-        response += `🎯 **Sobre este board:**\n`;
-        response += `📋 **${boardContext.statistics.total_tasks} tarefas** distribuídas em **${boardContext.statistics.total_columns} colunas**\n\n`;
-        response += `🤖 Estou aqui para ajudar com qualquer dúvida sobre o projeto!\n\n`;
-        response += `💬 *O que você gostaria de saber?*`;
+        // Resposta livre e contextual para qualquer pergunta
+        response = `🤔 Entendi sua pergunta sobre: "${userMessage}"\n\n`;
+        
+        // Tentar dar uma resposta contextual baseada no conteúdo do board
+        if (boardContext.tasks.length > 0) {
+          response += `Com base no que vejo neste projeto:\n\n`;
+          response += `📋 Temos **${taskCount} tarefas** distribuídas em **${columnCount} colunas**\n`;
+          
+          if (boardContext.tasks.some(t => t.priority === 'alta')) {
+            response += `⚡ Algumas tarefas têm **prioridade alta** e merecem atenção\n`;
+          }
+          
+          if (commentCount > 0) {
+            response += `💬 A equipe está ativa com **${commentCount} comentário${commentCount !== 1 ? 's' : ''}**\n`;
+          }
+          
+          response += `\n👥 A equipe também pode responder questões mais específicas.\n\n`;
+          response += `💬 Como posso ajudar você melhor?\n\n`;
+          
+          // Mostrar contexto das conversas recentes se houver
+          if (boardContext.messages && boardContext.messages.length > 0) {
+            const recentTopics = boardContext.messages.slice(-3).map(m => m.content.substring(0, 50)).join(', ');
+            response += `💭 Baseado em nossas conversas recentes sobre: ${recentTopics}`;
+          }
+        } else {
+          response += `Este projeto ainda está sendo configurado. Que tal começarmos criando algumas tarefas? 🚀`;
+        }
       }
 
       return response;
