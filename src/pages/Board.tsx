@@ -735,22 +735,27 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
 
   const loadChatHistory = async () => {
     try {
+      // Carregar apenas as últimas 50 mensagens para evitar sobrecarga
       const { data, error } = await supabase
         .from("board_messages")
         .select("*")
         .eq("board_id", id)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(50);
 
       if (error) throw error;
 
-      const messages = (data || []).map((msg: any) => ({
+      // Reverter a ordem para mostrar mensagens mais antigas primeiro
+      const sortedData = (data || []).reverse();
+
+      const messages = sortedData.map((msg: any) => ({
         id: msg.id,
         content: msg.content,
         sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
         timestamp: msg.created_at,
       }));
 
-      setBoardMessages(data || []);
+      setBoardMessages(sortedData);
       setChatHistory(messages);
     } catch (error) {
       console.error("Erro ao carregar histórico do chat:", error);
