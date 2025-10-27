@@ -1,186 +1,250 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 interface GenerateRequest {
   prompt: string;
-  type: 'columns' | 'tasks' | 'columns_with_tasks';
+  type: 'tasks' | 'columns' | 'columns_with_tasks';
 }
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey, x-supabase-auth, x-forwarded-for, user-agent',
-  'Access-Control-Max-Age': '86400',
-};
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders });
+// Função para gerar dados inteligentes baseados no prompt
+function generateSmartData(prompt: string, type: string) {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Detectar tipo de projeto baseado em palavras-chave
+  const isWebApp = lowerPrompt.includes('web') || lowerPrompt.includes('site') || lowerPrompt.includes('aplicativo') || lowerPrompt.includes('app');
+  const isEcommerce = lowerPrompt.includes('loja') || lowerPrompt.includes('ecommerce') || lowerPrompt.includes('venda') || lowerPrompt.includes('produto');
+  const isDelivery = lowerPrompt.includes('delivery') || lowerPrompt.includes('entrega') || lowerPrompt.includes('comida');
+  const isMobile = lowerPrompt.includes('mobile') || lowerPrompt.includes('android') || lowerPrompt.includes('ios');
+  const isAPI = lowerPrompt.includes('api') || lowerPrompt.includes('backend') || lowerPrompt.includes('servidor');
+
+  if (type === 'tasks') {
+    if (isDelivery) {
+      return [
+        {
+          titulo: "Definir arquitetura do sistema",
+          descricao: "Planejar a estrutura do aplicativo de delivery incluindo frontend, backend e banco de dados",
+          prioridade: "alta",
+          estimativa_horas: 8
+        },
+        {
+          titulo: "Implementar sistema de autenticação",
+          descricao: "Criar login/registro para clientes, entregadores e restaurantes",
+          prioridade: "alta",
+          estimativa_horas: 12
+        },
+        {
+          titulo: "Desenvolver catálogo de produtos",
+          descricao: "Interface para exibir cardápios e produtos dos restaurantes",
+          prioridade: "alta",
+          estimativa_horas: 16
+        },
+        {
+          titulo: "Criar sistema de pedidos",
+          descricao: "Fluxo completo de criação, pagamento e acompanhamento de pedidos",
+          prioridade: "alta",
+          estimativa_horas: 20
+        },
+        {
+          titulo: "Implementar rastreamento em tempo real",
+          descricao: "Sistema de GPS para acompanhar entregadores e pedidos",
+          prioridade: "media",
+          estimativa_horas: 15
+        },
+        {
+          titulo: "Integrar gateway de pagamento",
+          descricao: "Conectar com serviços de pagamento online",
+          prioridade: "alta",
+          estimativa_horas: 10
+        }
+      ];
+    } else if (isEcommerce) {
+      return [
+        {
+          titulo: "Configurar estrutura do projeto",
+          descricao: "Definir tecnologias e arquitetura da loja virtual",
+          prioridade: "alta",
+          estimativa_horas: 6
+        },
+        {
+          titulo: "Criar catálogo de produtos",
+          descricao: "Sistema para gerenciar produtos, categorias e estoque",
+          prioridade: "alta",
+          estimativa_horas: 18
+        },
+        {
+          titulo: "Implementar carrinho de compras",
+          descricao: "Funcionalidade para adicionar/remover produtos e calcular totais",
+          prioridade: "alta",
+          estimativa_horas: 12
+        },
+        {
+          titulo: "Desenvolver checkout",
+          descricao: "Processo de finalização de compra com dados do cliente",
+          prioridade: "alta",
+          estimativa_horas: 14
+        },
+        {
+          titulo: "Integrar pagamentos",
+          descricao: "Conectar com gateways de pagamento",
+          prioridade: "alta",
+          estimativa_horas: 8
+        }
+      ];
+    } else if (isWebApp || isMobile) {
+      return [
+        {
+          titulo: "Planejar funcionalidades",
+          descricao: "Definir escopo e requisitos do aplicativo",
+          prioridade: "alta",
+          estimativa_horas: 4
+        },
+        {
+          titulo: "Criar protótipo",
+          descricao: "Desenvolver wireframes e mockups das telas",
+          prioridade: "alta",
+          estimativa_horas: 8
+        },
+        {
+          titulo: "Configurar ambiente de desenvolvimento",
+          descricao: "Preparar ferramentas e dependências necessárias",
+          prioridade: "alta",
+          estimativa_horas: 3
+        },
+        {
+          titulo: "Implementar interface principal",
+          descricao: "Desenvolver as telas e componentes principais",
+          prioridade: "alta",
+          estimativa_horas: 20
+        },
+        {
+          titulo: "Adicionar funcionalidades core",
+          descricao: "Implementar as principais funcionalidades do app",
+          prioridade: "media",
+          estimativa_horas: 25
+        },
+        {
+          titulo: "Realizar testes",
+          descricao: "Testar funcionalidades e corrigir bugs",
+          prioridade: "media",
+          estimativa_horas: 10
+        }
+      ];
+    } else {
+      return [
+        {
+          titulo: "Análise de requisitos",
+          descricao: "Levantar e documentar todos os requisitos do projeto",
+          prioridade: "alta",
+          estimativa_horas: 6
+        },
+        {
+          titulo: "Planejamento técnico",
+          descricao: "Definir arquitetura e tecnologias a serem utilizadas",
+          prioridade: "alta",
+          estimativa_horas: 4
+        },
+        {
+          titulo: "Configuração inicial",
+          descricao: "Preparar ambiente e estrutura base do projeto",
+          prioridade: "alta",
+          estimativa_horas: 3
+        },
+        {
+          titulo: "Desenvolvimento core",
+          descricao: "Implementar funcionalidades principais",
+          prioridade: "alta",
+          estimativa_horas: 20
+        },
+        {
+          titulo: "Testes e validação",
+          descricao: "Realizar testes e validar funcionalidades",
+          prioridade: "media",
+          estimativa_horas: 8
+        }
+      ];
+    }
+  } else if (type === 'columns') {
+    if (isDelivery || isEcommerce) {
+      return [
+        { nome: "Backlog", descricao: "Funcionalidades planejadas", cor: "#6B7280", ordem: 1 },
+        { nome: "Em Desenvolvimento", descricao: "Tarefas sendo desenvolvidas", cor: "#3B82F6", ordem: 2 },
+        { nome: "Em Teste", descricao: "Funcionalidades sendo testadas", cor: "#F59E0B", ordem: 3 },
+        { nome: "Em Homologação", descricao: "Aguardando aprovação", cor: "#8B5CF6", ordem: 4 },
+        { nome: "Concluído", descricao: "Funcionalidades finalizadas", cor: "#10B981", ordem: 5 }
+      ];
+    } else {
+      return [
+        { nome: "A Fazer", descricao: "Tarefas pendentes", cor: "#6B7280", ordem: 1 },
+        { nome: "Em Progresso", descricao: "Tarefas em andamento", cor: "#3B82F6", ordem: 2 },
+        { nome: "Em Revisão", descricao: "Aguardando revisão", cor: "#F59E0B", ordem: 3 },
+        { nome: "Concluído", descricao: "Tarefas finalizadas", cor: "#10B981", ordem: 4 }
+      ];
+    }
+  } else if (type === 'columns_with_tasks') {
+    const tasks = generateSmartData(prompt, 'tasks') as any[];
+    const columns = generateSmartData(prompt, 'columns') as any[];
+    
+    // Distribuir tarefas pelas colunas
+    const tasksPerColumn = Math.ceil(tasks.length / columns.length);
+    
+    return columns.map((col, index) => ({
+      ...col,
+      tasks: tasks.slice(index * tasksPerColumn, (index + 1) * tasksPerColumn)
+    }));
   }
 
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Método não permitido. Use POST.' }),
-      { status: 405, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    );
+  return [];
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY não configurada' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
+    const requestData: GenerateRequest = await req.json()
+    console.log('Dados da requisição:', JSON.stringify(requestData))
 
-    const requestData: GenerateRequest = await req.json();
-    
     if (!requestData.prompt || !requestData.type) {
       return new Response(
         JSON.stringify({ error: 'Prompt e type são obrigatórios' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-
-    let prompt = '';
-    
-    if (requestData.type === 'columns') {
-      prompt = `Gere uma lista de colunas para um quadro Kanban baseado no contexto: "${requestData.prompt}".
-      
-Retorne APENAS um JSON válido no formato:
-{
-  "data": [
-    {"titulo": "Nome da Coluna 1"},
-    {"titulo": "Nome da Coluna 2"},
-    {"titulo": "Nome da Coluna 3"}
-  ]
-}
-
-Gere entre 3-5 colunas apropriadas para o contexto fornecido.`;
-    } else if (requestData.type === 'tasks') {
-      prompt = `Gere uma lista de tarefas baseadas no contexto: "${requestData.prompt}".
-      
-Retorne APENAS um JSON válido no formato:
-{
-  "data": [
-    {
-      "titulo": "Título da Tarefa 1",
-      "descricao": "Descrição detalhada da tarefa",
-      "prioridade": "alta"
-    },
-    {
-      "titulo": "Título da Tarefa 2", 
-      "descricao": "Descrição detalhada da tarefa",
-      "prioridade": "media"
-    }
-  ]
-}
-
-Gere entre 3-6 tarefas. Use prioridades: "baixa", "media", "alta".`;
-    } else if (requestData.type === 'columns_with_tasks') {
-      prompt = `Gere colunas com tarefas para um quadro Kanban baseado no contexto: "${requestData.prompt}".
-      
-Retorne APENAS um JSON válido no formato:
-{
-  "data": [
-    {
-      "titulo": "Nome da Coluna 1",
-      "tarefas": [
-        {
-          "titulo": "Tarefa 1",
-          "descricao": "Descrição da tarefa",
-          "prioridade": "alta"
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-      ]
-    }
-  ]
-}
-
-Gere 3-4 colunas, cada uma com 2-4 tarefas. Use prioridades: "baixa", "media", "alta".`;
+      )
     }
 
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 1,
-          topP: 1,
-          maxOutputTokens: 2000,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      }),
-    });
+    console.log(`Gerando dados para tipo: ${requestData.type}, prompt: ${requestData.prompt}`)
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Erro na API do Gemini: ${response.status} ${errorText}`);
-    }
+    // Gerar dados inteligentes baseados no prompt
+    const generatedData = generateSmartData(requestData.prompt, requestData.type);
 
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!generatedText) {
-      throw new Error('Resposta vazia da API do Gemini');
-    }
-
-    // Parse the JSON response from Gemini
-    let parsedResponse;
-    try {
-      // Remove markdown code blocks if present
-      const cleanText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
-      parsedResponse = JSON.parse(cleanText);
-    } catch (parseError) {
-      throw new Error(`Erro ao fazer parse da resposta: ${parseError.message}`);
-    }
+    console.log('Dados gerados:', JSON.stringify(generatedData))
 
     return new Response(
-      JSON.stringify(parsedResponse),
+      JSON.stringify({ data: generatedData }),
       { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
-    );
+    )
 
   } catch (error) {
-    console.error('Erro na função generate-board-content:', error);
+    console.error('Erro geral:', error)
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : String(error)
+        details: error.message 
       }),
       { 
         status: 500, 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
-    );
+    )
   }
-});
+})
