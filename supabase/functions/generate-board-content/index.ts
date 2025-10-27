@@ -40,6 +40,20 @@ Deno.serve(async (req: Request) => {
     }
     
     console.log('GEMINI_API_KEY está configurada');
+
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Método não permitido. Use POST.' }),
+        {
+          status: 405,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+
     const { type, context, columnTitle }: GenerateRequest = await req.json();
     console.log('Dados recebidos:', { type, context: context?.substring(0, 100) + '...', columnTitle });
 
@@ -69,6 +83,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         contents: [{
+          role: 'user',
           parts: [{
             text: `${systemPrompt}\n\n${userPrompt}`
           }]
@@ -76,6 +91,7 @@ Deno.serve(async (req: Request) => {
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 2000,
+          responseMimeType: 'application/json',
         }
       }),
     });
@@ -89,15 +105,26 @@ Deno.serve(async (req: Request) => {
     }
 
     const data = await response.json();
-    const content = data.candidates[0].content.parts[0].text;
+    let contentText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
-    // Parse the JSON response
+    // Parse the JSON response de forma robusta
     let result;
     try {
-      result = JSON.parse(content);
+      result = JSON.parse(contentText);
     } catch (parseError) {
-      console.error('Failed to parse Gemini response:', content);
-      throw new Error('Invalid JSON response from Gemini');
+      // Tenta extrair JSON dentro de code fences
+      const fenceMatch = contentText.match(/```json\s*([\s\S]*?)\s*```/) || contentText.match(/```\s*([\s\S]*?)\s*```/);
+      if (fenceMatch && fenceMatch[1]) {
+        try {
+          result = JSON.parse(fenceMatch[1]);
+        } catch (innerError) {
+          console.error('Failed to parse extracted JSON from Gemini:', fenceMatch[1]);
+          throw new Error('Invalid JSON response from Gemini (extracted)');
+        }
+      } else {
+        console.error('Failed to parse Gemini response:', contentText);
+        throw new Error('Invalid JSON response from Gemini');
+      }
     }
 
     return new Response(JSON.stringify(result), {
