@@ -91,7 +91,6 @@ Deno.serve(async (req: Request) => {
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 2000,
-          responseMimeType: 'application/json',
         }
       }),
     });
@@ -101,7 +100,13 @@ Deno.serve(async (req: Request) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Erro da API do Gemini:', response.status, errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      return new Response(errorText || JSON.stringify({ error: 'Gemini API error' }), {
+        status: response.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
 
     const data = await response.json();
@@ -119,11 +124,23 @@ Deno.serve(async (req: Request) => {
           result = JSON.parse(fenceMatch[1]);
         } catch (innerError) {
           console.error('Failed to parse extracted JSON from Gemini:', fenceMatch[1]);
-          throw new Error('Invalid JSON response from Gemini (extracted)');
+          return new Response(JSON.stringify({ error: 'Invalid JSON response from Gemini (extracted)' }), {
+            status: 502,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          });
         }
       } else {
         console.error('Failed to parse Gemini response:', contentText);
-        throw new Error('Invalid JSON response from Gemini');
+        return new Response(JSON.stringify({ error: 'Invalid JSON response from Gemini' }), {
+          status: 502,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
       }
     }
 
@@ -140,7 +157,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error)?.message ?? 'Unknown error' }),
       {
         status: 500,
         headers: {
