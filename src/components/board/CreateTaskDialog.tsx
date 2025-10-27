@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { geminiService } from "@/services/geminiService";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -87,13 +88,9 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
         throw new Error("Usuário não autenticado. Faça login novamente.");
       }
 
-      const { data, error } = await supabase.functions.invoke("generate-board-content", {
-        body: { prompt: aiPrompt, type: "tasks" },
-      });
-
-      if (error) throw error;
-
-      const tasks = data?.data || [];
+      // Usar o novo serviço Gemini
+      const response = await geminiService.generateBoardContent(aiPrompt, "tasks");
+      const tasks = response.data || [];
       
       const { data: existingTasks } = await supabase
         .from("tasks")

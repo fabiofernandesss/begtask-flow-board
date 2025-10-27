@@ -526,7 +526,7 @@ const Board = () => {
       }
       
       toast({ title: "Tarefa excluída com sucesso" });
-      fetchColumns();
+      fetchBoardData();
     } catch (error: any) {
       toast({
         title: "Erro ao excluir tarefa",

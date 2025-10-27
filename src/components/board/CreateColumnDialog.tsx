@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { geminiService } from "@/services/geminiService";
 
 interface CreateColumnDialogProps {
   open: boolean;
@@ -76,13 +77,9 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         throw new Error("Usuário não autenticado. Faça login novamente.");
       }
 
-      const { data, error } = await supabase.functions.invoke("generate-board-content", {
-        body: { prompt: aiPrompt, type: "columns_with_tasks" },
-      });
-
-      if (error) throw error;
-
-      const columnsWithTasks = data?.data || [];
+      // Usar o novo serviço Gemini
+      const response = await geminiService.generateBoardContent(aiPrompt, "columns_with_tasks");
+      const columnsWithTasks = response.data || [];
       
       const { data: existingColumns } = await supabase
         .from("columns")
@@ -131,9 +128,6 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
           if (tasksError) throw tasksError;
         }
       }
-
-      // Removido: não adicionar colunas de status automaticamente para evitar duplicidade.
-      // As colunas base serão tratadas pela função Edge quando necessário.
 
       toast({ 
         title: "Quadro criado com IA!", 
