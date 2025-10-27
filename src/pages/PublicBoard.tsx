@@ -213,7 +213,7 @@ const PublicBoard = () => {
         sessionStorage.setItem(`board_password_${id}`, hashedPassword);
         setNeedsPassword(false);
         setLoading(true);
-        await loadBoardContent();
+        await fetchColumns();
         setLoading(false);
       } else {
         toast({
@@ -295,35 +295,10 @@ const PublicBoard = () => {
     }
   };
 
-  const handleDragEnd = async (result: any) => {
-    e.preventDefault();
-    setAuthenticating(true);
-
-    try {
-      const hashedPassword = btoa(password);
-      
-      if (hashedPassword === board?.senha_hash) {
-        sessionStorage.setItem(`board_password_${id}`, hashedPassword);
-        setNeedsPassword(false);
-        setLoading(true);
-        await loadBoardContent();
-        setLoading(false);
-      } else {
-        toast({
-          title: "Senha incorreta",
-          description: "A senha informada está incorreta.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao verificar senha",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setAuthenticating(false);
-    }
+  const handleDragEnd = async (_result: any) => {
+    // Drag-and-drop desativado/sem efeito no board público.
+    // Mantido como no-op para futura extensão.
+    return;
   };
 
   const handleTaskClick = (task: Task) => {
