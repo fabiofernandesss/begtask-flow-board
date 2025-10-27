@@ -162,52 +162,36 @@ const Board = () => {
   const fetchTeamMembersAndParticipants = async (currentColumns: Column[]) => {
     try {
       const taskIds = currentColumns.flatMap(col => col.tasks.map(task => task.id));
+
+      // Buscar membros do board (para o seletor e avatares) sempre
+      const { data: teamData, error: teamError } = await supabase
+        .from("board_members")
+        .select("user_id, users(id, nome, foto_perfil)")
+        .eq("board_id", id);
+      if (teamError) throw teamError;
+      const team = (teamData || []).map((m: any) => m.users).filter(Boolean) as TeamMember[];
+      setTeamMembers(team);
+
       if (taskIds.length === 0) {
-        setTeamMembers([]);
         setTaskParticipants([]);
         return;
       }
 
-      // Fetch participants and their profiles
+      // Buscar participantes com join direto em users para garantir foto_perfil
       const { data: participantsData, error: participantsError } = await supabase
         .from("task_participants")
-        .select(`
-          id,
-          task_id,
-          user_id,
-          role
-        `)
+        .select("id, task_id, user_id, role, user:users(id, nome, foto_perfil)")
         .in("task_id", taskIds);
-
       if (participantsError) throw participantsError;
 
-      // Fetch profiles separately for the participants
-      const userIds = [...new Set(participantsData?.map(p => p.user_id) || [])];
-      let profilesData = [];
-      
-      if (userIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, nome, foto_perfil")
-          .in("id", userIds);
-        
-        if (!profilesError) {
-          profilesData = profiles || [];
-        }
-      }
-
-      // Combine participants with their profiles
-      const participantsWithProfiles = (participantsData || []).map(participant => ({
-        ...participant,
-        user: profilesData.find(profile => profile.id === participant.user_id) || null
-      }));
-
-      setTaskParticipants(participantsWithProfiles as TaskParticipant[]);
-
-      const members = participantsWithProfiles.map(p => p.user).filter(Boolean);
-      const uniqueMembers = Array.from(new Map(members.map(m => [m.id, m])).values());
-      setTeamMembers(uniqueMembers as TeamMember[]);
-      
+      const participantsWithUser = (participantsData || []).map((p: any) => ({
+        id: p.id,
+        task_id: p.task_id,
+        user_id: p.user_id,
+        role: p.role,
+        user: p.user || null,
+      })) as TaskParticipant[];
+      setTaskParticipants(participantsWithUser);
     } catch (error: any) {
       console.error("Erro ao carregar membros e participantes:", error);
       setTeamMembers([]);

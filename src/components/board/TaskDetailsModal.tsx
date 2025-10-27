@@ -53,7 +53,13 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       fetchProfiles();
       if (task?.responsavel_id) {
         fetchSelectedUser(task.responsavel_id);
+      } else {
+        // Limpar seleção ao abrir para uma tarefa sem responsável
+        setSelectedUser(null);
       }
+    } else {
+      // Garantir que não persista estado entre tarefas ao fechar o modal
+      setSelectedUser(null);
     }
   }, [open, task]);
 
