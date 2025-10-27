@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 function cleanJsonFromText(text: string): string {
   if (!text) return "[]";
@@ -80,8 +80,8 @@ Cada tarefa: { "titulo": string não genérico, "descricao": string com 3–5 li
 Não inclua nada além do JSON.`;
 }
 
-async function generateWithGemini(prompt: string, type: string): Promise<any[]> {
-  const apiKey = Deno.env.get('GEMINI_API_KEY');
+async function generateWithGemini(prompt: string, type: string, apiKeyOverride?: string): Promise<any[]> {
+  const apiKey = apiKeyOverride || Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) throw new Error('GEMINI_API_KEY não configurada');
 
   const url = `${GEMINI_URL}?key=${apiKey}`;
@@ -89,7 +89,7 @@ async function generateWithGemini(prompt: string, type: string): Promise<any[]> 
     contents: [
       { role: 'user', parts: [ { text: buildPrompt(prompt, type) } ] }
     ],
-    generationConfig: { responseMimeType: 'application/json' }
+    generationConfig: { response_mime_type: 'application/json', temperature: 0.2 }
   };
 
   const res = await fetch(url, {
@@ -116,6 +116,55 @@ async function generateWithGemini(prompt: string, type: string): Promise<any[]> 
     throw new Error('Resposta do Gemini não contém dados válidos');
   }
   return coerced;
+}
+
+function postProcessColumns(items: any[], type: string): any[] {
+  if (!Array.isArray(items)) return items;
+
+  const dedupByTitle = (arr: any[]) => {
+    const seen = new Set<string>();
+    const result: any[] = [];
+    for (const i of arr) {
+      const t = String(i?.titulo || '').trim().toLowerCase();
+      if (!t) continue;
+      if (!seen.has(t)) { seen.add(t); result.push(i); }
+    }
+    return result;
+  };
+
+  if (type === 'columns') {
+    let result = ensureBaselineColumns(items, 'columns');
+    result = dedupByTitle(result);
+    // Manter sempre as duas colunas padrão e limitar o restante a no máximo 4
+    const base = [] as any[];
+    const others = [] as any[];
+    for (const c of result) {
+      const t = String(c.titulo).toLowerCase();
+      if (t === 'em andamento' || t === 'concluídas' || t === 'concluidas') base.push(c);
+      else others.push(c);
+    }
+    return [...base, ...others.slice(0, 4)];
+  }
+
+  if (type === 'columns_with_tasks') {
+    let result = ensureBaselineColumns(items, 'columns_with_tasks');
+    result = dedupByTitle(result).map((c) => ({
+      titulo: c.titulo,
+      tasks: Array.isArray(c.tasks) ? c.tasks.filter((t: any) => String(t?.titulo || '').trim()) : []
+    }));
+    // Manter apenas colunas com tarefas (além das padrão)
+    const base = [] as any[];
+    const withTasks = [] as any[];
+    for (const c of result) {
+      const t = String(c.titulo).toLowerCase();
+      const isBase = t === 'em andamento' || t === 'concluídas' || t === 'concluidas';
+      if (isBase) base.push(c);
+      else if ((c.tasks || []).length > 0) withTasks.push(c);
+    }
+    return [...base, ...withTasks.slice(0, 4)];
+  }
+
+  return items;
 }
 
 function ensureBaselineColumns(items: any[], type: string): any[] {
@@ -382,7 +431,8 @@ serve(async (req) => {
     // Tentar via Gemini primeiro; em caso de erro, retornar apenas colunas padrão
     let generatedData: any[];
     try {
-      generatedData = await generateWithGemini(requestData.prompt, requestData.type);
+      const headerApiKey = req.headers.get('x-goog-api-key') || undefined;
+      generatedData = await generateWithGemini(requestData.prompt, requestData.type, headerApiKey);
       console.log('Dados gerados pela IA (Gemini)');
     } catch (aiErr) {
       console.warn('Gemini falhou, retornando padrão mínimo:', (aiErr as Error).message);
@@ -395,8 +445,8 @@ serve(async (req) => {
       }
     }
 
-    // Garantir colunas padrão sempre presentes quando aplicável
-    generatedData = ensureBaselineColumns(generatedData, requestData.type);
+    // Pós-processar: garantir padrão e filtrar colunas vazias/genéricas
+    generatedData = postProcessColumns(generatedData, requestData.type);
 
     console.log('Dados gerados:', JSON.stringify(generatedData))
 
