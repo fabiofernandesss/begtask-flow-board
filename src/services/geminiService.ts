@@ -167,7 +167,10 @@ Regras:
 - Se o usuário especificar explicitamente a quantidade de colunas/blocos, respeite exatamente esse número (ex.: "2 blocos" = 2 colunas)
 - Caso não especifique quantidade, gere entre 2-4 colunas específicas para o projeto
 - NÃO use colunas genéricas como "A Fazer", "Fazendo", "Feito"
+- Se a quantidade total de colunas for ≥ 2, GARANTA que duas colunas estejam presentes com estes títulos EXATOS e vazias: "Em andamento" e "Concluídas". Elas CONTAM dentro do total solicitado.
+- Se a quantidade total de colunas for = 1, priorize criar apenas "Em andamento" vazia.
 - Se o usuário pedir colunas vazias, retorne "tasks": [] para todas as colunas
+- Nunca adicione tarefas às colunas "Em andamento" e "Concluídas"; mantenha-as sempre com "tasks": []
 - Quando incluir tarefas, limite a no máximo 3 por coluna, com descrições curtas (até 2 frases)
 - Tarefas devem ter título, descrição, prioridade e estimativa de horas
 - Prioridade deve ser: "alta", "media" ou "baixa"

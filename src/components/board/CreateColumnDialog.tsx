@@ -91,7 +91,57 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
 
       // Usar o novo serviço Gemini
       const response = await geminiService.generateBoardContent(aiPrompt, "columns_with_tasks");
-      const columnsWithTasks = response.data || [];
+      // Resultado bruto da IA
+      const columnsWithTasks = (response.data || []) as any[];
+
+      // Fallback: garantir presença de colunas padrão vazias
+      // 'Em andamento' e 'Concluídas' devem existir e SEM tarefas
+      const norm = (s: string) => (s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+      const isDefault = (t: string) => {
+        const n = norm(t);
+        return n === 'em andamento' || n === 'concluidas';
+      };
+
+      let result = Array.isArray(columnsWithTasks) ? [...columnsWithTasks] : [];
+
+      // Se já existirem, forçar tasks: []
+      result = result.map((col: any) => {
+        if (isDefault(col?.titulo)) {
+          return { ...col, tasks: [] };
+        }
+        return col;
+      });
+
+      // Definir quais defaults são desejados com base no total
+      const desiredDefaults = (result.length >= 2)
+        ? ['Em andamento', 'Concluídas']
+        : ['Em andamento'];
+
+      const present = new Set(result.map((c: any) => norm(c?.titulo)));
+      const missing = desiredDefaults.filter((d) => !present.has(norm(d)));
+
+      if (missing.length > 0) {
+        // Tentar substituir de trás pra frente colunas não padrão
+        let replaced = 0;
+        for (let i = result.length - 1; i >= 0 && replaced < missing.length; i--) {
+          const n = norm(result[i]?.titulo);
+          if (n !== 'em andamento' && n !== 'concluidas') {
+            result[i] = { titulo: missing[replaced], tasks: [] };
+            replaced++;
+          }
+        }
+        // Se ainda faltou incluir alguma (lista muito pequena), adiciona ao final
+        for (let j = replaced; j < missing.length; j++) {
+          // Evita duplicar se já foi substituída por coincidência
+          if (!result.some((c: any) => norm(c?.titulo) === norm(missing[j]))) {
+            result.push({ titulo: missing[j], tasks: [] });
+          }
+        }
+      }
       
       const { data: existingColumns } = await supabase
         .from("columns")
@@ -107,8 +157,8 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
       const columnColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
       
       // Criar colunas específicas do projeto com tarefas
-      for (let i = 0; i < columnsWithTasks.length; i++) {
-        const col = columnsWithTasks[i];
+      for (let i = 0; i < result.length; i++) {
+        const col = result[i];
         const color = columnColors[i % columnColors.length];
         
         const { data: newColumn, error: colError } = await supabase
@@ -143,7 +193,7 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
 
       toast({ 
         title: "Quadro criado com IA!", 
-        description: `${columnsWithTasks.length} colunas de projeto foram criadas` 
+        description: `${result.length} colunas de projeto foram criadas` 
       });
       setAiPrompt("");
       onColumnCreated();
