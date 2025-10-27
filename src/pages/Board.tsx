@@ -509,7 +509,7 @@ const Board = () => {
       }
 
       toast({ title: "Coluna excluída com sucesso" });
-      fetchColumns();
+      fetchBoardData();
     } catch (error: any) {
       toast({
         title: "Erro ao excluir coluna",

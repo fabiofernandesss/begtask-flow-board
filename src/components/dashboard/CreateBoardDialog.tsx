@@ -80,7 +80,13 @@ const CreateBoardDialog = ({ open, onOpenChange, onBoardCreated }: CreateBoardDi
 
       if (columnsError) {
         console.error("Erro ao criar colunas padrão:", columnsError);
-        // Não falha a criação do board se as colunas falharem
+        toast({
+          title: "Aviso",
+          description: "Board criado, mas houve erro ao criar colunas padrão. Você pode criá-las manualmente.",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Colunas padrão criadas com sucesso");
       }
 
       toast({
