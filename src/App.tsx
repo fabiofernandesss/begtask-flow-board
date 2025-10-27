@@ -7,6 +7,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Board from "./pages/Board";
 import PublicBoard from "./pages/PublicBoard";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/board/:id" element={<Board />} />
         <Route path="/public/board/:id" element={<PublicBoard />} />
