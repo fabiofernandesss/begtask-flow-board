@@ -59,13 +59,13 @@ function coerceToSchema(data: any, type: string): any[] {
 
 function buildPrompt(prompt: string, type: string): string {
   if (type === 'columns') {
-    return `Você é um gerador de estrutura de quadro Kanban. Dado o contexto: "${prompt}", gere um array JSON puro com 4 a 6 colunas. Cada item deve ser um objeto com a chave "titulo" (string). Não inclua explicações, apenas o JSON.`;
+    return `Você é um gerador de estrutura de quadro Kanban em pt-BR. Dado o contexto: "${prompt}", gere um array JSON puro com 4 a 6 colunas. Cada item deve ser um objeto com a chave "titulo" (string). Evite nomes genéricos como "Backlog", "A Fazer", "Em Progresso" e "Em Revisão" — personalize os nomes de acordo com o domínio solicitado. Não inclua explicações, apenas o JSON.`;
   }
   if (type === 'tasks') {
     return `Gere um array JSON puro de tarefas relevantes para: "${prompt}". Cada tarefa é um objeto com as chaves: "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"), "data_entrega" (YYYY-MM-DD ou null). Não inclua texto fora do JSON.`;
   }
   // columns_with_tasks
-  return `Gere um array JSON puro de colunas com tarefas para: "${prompt}". O formato é: [ { "titulo": string, "tasks": [ { "titulo": string, "descricao": string|null, "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null } ] } ]. Não inclua nada além do JSON.`;
+  return `Gere um array JSON puro de colunas com tarefas para: "${prompt}" em pt-BR. Evite nomes genéricos de coluna (ex.: "Backlog", "A Fazer", "Em Progresso"). O formato é: [ { "titulo": string, "tasks": [ { "titulo": string, "descricao": string|null, "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null } ] } ]. Não inclua nada além do JSON.`;
 }
 
 async function generateWithGemini(prompt: string, type: string): Promise<any[]> {
@@ -264,19 +264,47 @@ function generateSmartData(prompt: string, type: string) {
       ];
     }
   } else if (type === 'columns') {
-    if (isDelivery || isEcommerce) {
+    if (isDelivery) {
       return [
-        { titulo: "Backlog" },
-        { titulo: "Em Desenvolvimento" },
-        { titulo: "Em Teste" },
-        { titulo: "Em Homologação" },
-        { titulo: "Concluído" }
+        { titulo: "Novos Pedidos" },
+        { titulo: "Em Preparo" },
+        { titulo: "Pronto para Entrega" },
+        { titulo: "Saiu para Entrega" },
+        { titulo: "Entregues" },
+        { titulo: "Problemas/Recusa" }
+      ];
+    } else if (isEcommerce) {
+      return [
+        { titulo: "Descoberta" },
+        { titulo: "Carrinho" },
+        { titulo: "Pagamento" },
+        { titulo: "Separação/Envio" },
+        { titulo: "Entregue" },
+        { titulo: "Trocas/Devoluções" }
+      ];
+    } else if (isAPI) {
+      return [
+        { titulo: "Especificação" },
+        { titulo: "Modelagem" },
+        { titulo: "Endpoints" },
+        { titulo: "Integração/QA" },
+        { titulo: "Observabilidade" },
+        { titulo: "Produção" }
+      ];
+    } else if (isWebApp || isMobile) {
+      return [
+        { titulo: "Design" },
+        { titulo: "Desenvolvimento" },
+        { titulo: "Testes" },
+        { titulo: "Homologação" },
+        { titulo: "Publicação" },
+        { titulo: "Suporte" }
       ];
     } else {
       return [
-        { titulo: "A Fazer" },
-        { titulo: "Em Progresso" },
-        { titulo: "Em Revisão" },
+        { titulo: "Planejamento" },
+        { titulo: "Execução" },
+        { titulo: "Revisão" },
         { titulo: "Concluído" }
       ];
     }
