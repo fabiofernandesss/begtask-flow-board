@@ -61,8 +61,8 @@ function buildPrompt(prompt: string, type: string): string {
   if (type === 'columns') {
     return `Você é um gerador de estrutura de quadro Kanban em pt-BR. Dado: "${prompt}".
 Retorne APENAS um array JSON de objetos { "titulo": string }.
-O array DEVE começar com duas colunas padrão: "Em andamento" e "Concluídas".
-Em seguida, gere 2–4 colunas adicionais estritamente pertinentes ao domínio descrito, evitando nomes genéricos (ex.: "Backlog", "A Fazer", "Em Progresso", "Em Revisão").
+NÃO inclua colunas padrão como "Em andamento" ou "Concluídas" (nem variações: "Concluído", "Done", "Em Progresso", "A Fazer", "Backlog").
+Gere 2–4 colunas estritamente pertinentes ao domínio descrito, evitando nomes genéricos.
 Não invente funcionalidades fora do domínio. Não inclua texto fora do JSON.`;
   }
   if (type === 'tasks') {
@@ -73,9 +73,9 @@ Não inclua texto fora do JSON.`;
   }
   // columns_with_tasks
   return `Retorne APENAS um array JSON de colunas com tarefas para: "${prompt}" (pt-BR).
-O array DEVE começar com duas colunas padrão: { "titulo": "Em andamento", "tasks": [] } e { "titulo": "Concluídas", "tasks": [] }.
-Em seguida, gere 2–4 colunas adicionais estritamente pertinentes ao domínio, evitando nomes genéricos (ex.: "Backlog", "A Fazer", "Em Progresso").
-Cada coluna adicional deve conter de 3 a 6 tarefas.
+NÃO inclua colunas padrão como "Em andamento" ou "Concluídas" (nem variações: "Concluído", "Done", "Em Progresso", "A Fazer", "Backlog").
+Gere 2–4 colunas estritamente pertinentes ao domínio, evitando nomes genéricos.
+Cada coluna deve conter de 3 a 6 tarefas.
 Cada tarefa: { "titulo": string não genérico, "descricao": string com 3–5 linhas curtas separadas por "\\n", "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null }.
 Não inclua nada além do JSON.`;
 }
