@@ -442,6 +442,20 @@ serve(async (req) => {
     // Pós-processar: garantir padrão e filtrar colunas vazias/genéricas
     generatedData = postProcessColumns(generatedData, requestData.type);
 
+    // Garantia extra: para columns_with_tasks, se vier apenas colunas vazias,
+    // reconstituímos dados locais com tarefas para evitar resposta inútil.
+    if (
+      requestData.type === 'columns_with_tasks' &&
+      (
+        !Array.isArray(generatedData) ||
+        generatedData.length === 0 ||
+        generatedData.every((c: any) => !Array.isArray(c?.tasks) || c.tasks.length === 0)
+      )
+    ) {
+      generatedData = generateSmartData(requestData.prompt, requestData.type);
+      generatedData = postProcessColumns(generatedData, requestData.type);
+    }
+
     console.log('Dados gerados:', JSON.stringify(generatedData))
 
     return new Response(
