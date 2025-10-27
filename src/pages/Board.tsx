@@ -97,7 +97,14 @@ const Board = () => {
 
   useEffect(() => {
     if (columns && columns.length > 0) {
+      // Garantir que os membros da equipe e participantes sejam buscados
+      // após a atualização das colunas, evitando uso de estado obsoleto
+      fetchTeamMembers();
       fetchTaskParticipants();
+    } else {
+      // Resetar estados relacionados quando não há colunas
+      setTeamMembers([]);
+      setTaskParticipants([]);
     }
   }, [columns]);
 
@@ -152,7 +159,6 @@ const Board = () => {
       }));
 
       setColumns(columnsWithTasks);
-      fetchTeamMembers();
     } catch (error: any) {
       toast({
         title: "Erro ao carregar colunas",
