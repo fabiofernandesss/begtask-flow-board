@@ -207,12 +207,14 @@ const PublicBoard = () => {
     setAuthenticating(true);
 
     try {
-      // Verificar senha (usando btoa para compatibilidade com o EditBoardDialog)
       const hashedPassword = btoa(password);
       
       if (hashedPassword === board?.senha_hash) {
+        sessionStorage.setItem(`board_password_${id}`, hashedPassword);
         setNeedsPassword(false);
-        await fetchColumns();
+        setLoading(true);
+        await loadBoardContent();
+        setLoading(false);
       } else {
         toast({
           title: "Senha incorreta",
@@ -249,133 +251,80 @@ const PublicBoard = () => {
 
       if (tasksError) throw tasksError;
 
-      const columnsWithTasks = (columnsData || []).map(col => ({
-        ...col,
-        tasks: (tasksData || []).filter(task => task.column_id === col.id)
+      const tasksWithEmptyArray = tasksData || [];
+
+      // 4. Buscar Membros da Equipe (do board)
+      const { data: teamMembersData, error: teamMembersError } = await supabase
+        .from("board_members")
+        .select("user_id, users(id, nome, foto_perfil)")
+        .eq("board_id", id);
+
+      if (teamMembersError) throw teamMembersError;
+
+      const formattedTeamMembers = teamMembersData?.map(m => m.users) || [];
+      setTeamMembers(formattedTeamMembers as TeamMember[]);
+
+      // 5. Buscar Participantes das Tarefas
+      const taskIds = tasksWithEmptyArray.map(t => t.id);
+      if (taskIds.length > 0) {
+        const { data: participantsData, error: participantsError } = await supabase
+          .from("task_participants")
+          .select("*, user:users(id, nome, foto_perfil)")
+          .in("task_id", taskIds);
+
+        if (participantsError) throw participantsError;
+        setTaskParticipants(participantsData || []);
+      } else {
+        setTaskParticipants([]);
+      }
+
+      // 6. Montar o estado final
+      const columnsWithTasks = columnsData.map((column) => ({
+        ...column,
+        tasks: tasksWithEmptyArray.filter((task) => task.column_id === column.id),
       }));
 
       setColumns(columnsWithTasks);
+    } catch (error: any) {
+      console.error("Erro detalhado ao carregar conteúdo do board:", error);
+      toast({
+        title: "Erro ao carregar conteúdo do board",
+        description: "Não foi possível buscar os detalhes do board. " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDragEnd = async (result: any) => {
+    e.preventDefault();
+    setAuthenticating(true);
+
+    try {
+      const hashedPassword = btoa(password);
       
-      // Buscar membros da equipe
-      await fetchTeamMembers();
+      if (hashedPassword === board?.senha_hash) {
+        sessionStorage.setItem(`board_password_${id}`, hashedPassword);
+        setNeedsPassword(false);
+        setLoading(true);
+        await loadBoardContent();
+        setLoading(false);
+      } else {
+        toast({
+          title: "Senha incorreta",
+          description: "A senha informada está incorreta.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
-        title: "Erro ao carregar colunas",
+        title: "Erro ao verificar senha",
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setAuthenticating(false);
     }
   };
-
-  const fetchTeamMembers = async () => {
-    try {
-      // Primeiro buscar todas as colunas do board
-      const { data: columnsData, error: columnsError } = await supabase
-        .from("columns")
-        .select("id")
-        .eq("board_id", id);
-
-      if (columnsError) throw columnsError;
-
-      if (!columnsData || columnsData.length === 0) {
-        setTeamMembers([]);
-        return;
-      }
-
-      // Buscar todas as tarefas dessas colunas
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select("responsavel_id")
-        .in("column_id", columnsData.map(c => c.id))
-        .not("responsavel_id", "is", null);
-
-      if (tasksError) throw tasksError;
-
-      // Obter IDs únicos dos responsáveis
-      const uniqueResponsibleIds = [...new Set(taskIdsWithResponsibles)];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, nome, foto_perfil')
-        .in('id', uniqueResponsibleIds);
-
-      if (profilesError) throw profilesError;
-      setTeamMembers(profilesData || []);
-    } catch (error: any) {
-      console.error("Erro ao carregar membros da equipe:", error);
-    }
-  };
-
-  const fetchTaskParticipants = async () => {
-    try {
-      if (!columns || !Array.isArray(columns) || columns.length === 0) {
-        setTaskParticipants([]);
-        return;
-      }
-
-      // Obter IDs de todas as tarefas
-      const taskIds = columns.flatMap(col => 
-        col && col.tasks && Array.isArray(col.tasks) 
-          ? col.tasks.map(task => task.id).filter(Boolean)
-          : []
-      );
-      
-      if (taskIds.length === 0) {
-        setTaskParticipants([]);
-        return;
-      }
-
-      // Buscar participantes das tarefas
-      const { data: participantsData, error: participantsError } = await supabase
-        .from("task_participants")
-        .select("id, task_id, user_id, role")
-        .in("task_id", taskIds);
-
-      if (participantsError) {
-        console.error("Erro na consulta de participantes:", participantsError);
-        setTaskParticipants([]);
-        return;
-      }
-
-      if (!participantsData || participantsData.length === 0) {
-        setTaskParticipants([]);
-        return;
-      }
-
-      // Obter IDs únicos dos usuários
-      const userIds = [...new Set(participantsData.map(p => p.user_id))];
-
-      // Buscar perfis dos usuários
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, nome, foto_perfil")
-        .in("id", userIds);
-
-      if (profilesError) {
-        console.error("Erro na consulta de perfis:", profilesError);
-        setTaskParticipants([]);
-        return;
-      }
-
-      // Combinar dados dos participantes com perfis
-      const participantsWithProfiles = participantsData.map(participant => ({
-        ...participant,
-        user: profilesData?.find(profile => profile.id === participant.user_id) || {
-          id: participant.user_id,
-          nome: "Usuário não encontrado",
-          foto_perfil: null
-        }
-      }));
-      
-      setTaskParticipants(participantsWithProfiles);
-    } catch (error: any) {
-      console.error("Erro ao carregar participantes das tarefas:", error);
-      setTaskParticipants([]);
-    }
-  };
-
-
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
