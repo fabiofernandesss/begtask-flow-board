@@ -175,17 +175,36 @@ const Board = () => {
           id,
           task_id,
           user_id,
-          role,
-          user:profiles (id, nome, foto_perfil)
+          role
         `)
         .in("task_id", taskIds);
 
       if (participantsError) throw participantsError;
-      
-      const loadedParticipants = participantsData || [];
-      setTaskParticipants(loadedParticipants as TaskParticipant[]);
 
-      const members = loadedParticipants.map(p => p.user).filter(Boolean);
+      // Fetch profiles separately for the participants
+      const userIds = [...new Set(participantsData?.map(p => p.user_id) || [])];
+      let profilesData = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, nome, foto_perfil")
+          .in("id", userIds);
+        
+        if (!profilesError) {
+          profilesData = profiles || [];
+        }
+      }
+
+      // Combine participants with their profiles
+      const participantsWithProfiles = (participantsData || []).map(participant => ({
+        ...participant,
+        user: profilesData.find(profile => profile.id === participant.user_id) || null
+      }));
+
+      setTaskParticipants(participantsWithProfiles as TaskParticipant[]);
+
+      const members = participantsWithProfiles.map(p => p.user).filter(Boolean);
       const uniqueMembers = Array.from(new Map(members.map(m => [m.id, m])).values());
       setTeamMembers(uniqueMembers as TeamMember[]);
       
@@ -378,8 +397,36 @@ const Board = () => {
     }
   };
 
-  const handleColumnCreated = () => {
-    fetchBoardData();
+  const handleColumnCreated = async () => {
+    try {
+      // Atualizar apenas as colunas sem recarregar tudo
+      const { data: columnsData, error: columnsError } = await supabase
+        .from("columns")
+        .select("*")
+        .eq("board_id", id)
+        .order("posicao");
+      
+      if (columnsError) throw columnsError;
+
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select("*")
+        .in("column_id", columnsData.map(c => c.id))
+        .order("posicao");
+      
+      if (tasksError) throw tasksError;
+
+      const columnsWithTasks = columnsData.map((column) => ({
+        ...column,
+        tasks: tasksData.filter((task) => task.column_id === column.id),
+      }));
+
+      setColumns(columnsWithTasks);
+    } catch (error: any) {
+      console.error("Erro ao atualizar colunas:", error);
+      // Fallback para recarregar tudo se houver erro
+      fetchBoardData();
+    }
     setColumnDialogOpen(false);
   };
 
@@ -541,8 +588,28 @@ const Board = () => {
     setTaskDetailsOpen(true);
   };
 
-  const handleTaskUpdate = () => {
-    fetchBoardData();
+  const handleTaskUpdate = async () => {
+    try {
+      // Atualizar apenas as tarefas sem recarregar tudo
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select("*")
+        .in("column_id", columns.map(c => c.id))
+        .order("posicao");
+      
+      if (tasksError) throw tasksError;
+
+      const updatedColumns = columns.map((column) => ({
+        ...column,
+        tasks: tasksData.filter((task) => task.column_id === column.id),
+      }));
+
+      setColumns(updatedColumns);
+    } catch (error: any) {
+      console.error("Erro ao atualizar tarefas:", error);
+      // Fallback para recarregar tudo se houver erro
+      fetchBoardData();
+    }
   };
 
   // Chat functions

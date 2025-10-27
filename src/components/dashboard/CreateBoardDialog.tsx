@@ -55,15 +55,33 @@ const CreateBoardDialog = ({ open, onOpenChange, onBoardCreated }: CreateBoardDi
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { error } = await supabase.from("boards").insert({
+      const { data: newBoard, error } = await supabase.from("boards").insert({
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
         publico,
         senha_hash: senha, // Em produção, hash a senha no backend
         owner_id: user.id,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Criar colunas padrão automaticamente
+      const defaultColumns = [
+        { titulo: "Em andamento", posicao: 0, cor: "#3b82f6" },
+        { titulo: "Concluídas", posicao: 1, cor: "#10b981" }
+      ];
+
+      const { error: columnsError } = await supabase.from("columns").insert(
+        defaultColumns.map(col => ({
+          ...col,
+          board_id: newBoard.id
+        }))
+      );
+
+      if (columnsError) {
+        console.error("Erro ao criar colunas padrão:", columnsError);
+        // Não falha a criação do board se as colunas falharem
+      }
 
       toast({
         title: "Bloco criado!",
