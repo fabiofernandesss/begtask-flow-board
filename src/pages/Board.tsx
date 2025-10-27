@@ -223,7 +223,7 @@ const Board = () => {
           description: error.message,
           variant: "destructive",
         });
-        fetchColumns();
+        fetchBoardData();
       }
     } else {
       const sourceCol = columns.find(c => c.id === source.droppableId);
@@ -259,7 +259,7 @@ const Board = () => {
             description: error.message,
             variant: "destructive",
           });
-          fetchColumns();
+          fetchBoardData();
         }
       } else {
         destTasks.splice(destination.index, 0, { ...movedTask, column_id: destCol.id });
@@ -372,14 +372,14 @@ const Board = () => {
             description: error.message,
             variant: "destructive",
           });
-          fetchColumns();
+          fetchBoardData();
         }
       }
     }
   };
 
   const handleColumnCreated = () => {
-    fetchColumns();
+    fetchBoardData();
     setColumnDialogOpen(false);
   };
 
@@ -542,7 +542,7 @@ const Board = () => {
   };
 
   const handleTaskUpdate = () => {
-    fetchColumns();
+    fetchBoardData();
   };
 
   // Chat functions
@@ -782,7 +782,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                           onDelete={handleDeleteColumn}
                           onDeleteTask={handleDeleteTask}
                           onTaskClick={handleTaskClick}
-                          onTaskCreated={fetchColumns}
+                          onTaskCreated={fetchBoardData}
                           teamMembers={teamMembers}
                           taskParticipants={taskParticipants}
                         />

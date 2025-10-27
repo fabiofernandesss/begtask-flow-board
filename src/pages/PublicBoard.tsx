@@ -294,18 +294,11 @@ const PublicBoard = () => {
       if (tasksError) throw tasksError;
 
       // Obter IDs únicos dos responsáveis
-      const uniqueResponsavelIds = [...new Set(tasksData?.map(t => t.responsavel_id) || [])];
-
-      if (uniqueResponsavelIds.length === 0) {
-        setTeamMembers([]);
-        return;
-      }
-
-      // Buscar perfis dos responsáveis
+      const uniqueResponsibleIds = [...new Set(taskIdsWithResponsibles)];
       const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, nome, foto_perfil")
-        .in("id", uniqueResponsavelIds);
+        .from('profiles')
+        .select('id, nome, foto_perfil')
+        .in('id', uniqueResponsibleIds);
 
       if (profilesError) throw profilesError;
       setTeamMembers(profilesData || []);
