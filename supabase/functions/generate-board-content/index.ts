@@ -428,21 +428,15 @@ serve(async (req) => {
 
     console.log(`Gerando dados para tipo: ${requestData.type}, prompt: ${requestData.prompt}`)
 
-    // Tentar via Gemini primeiro; em caso de erro, retornar apenas colunas padrão
+    // Tentar via Gemini primeiro; em caso de erro, gerar conteúdo inteligente localmente
     let generatedData: any[];
     try {
       const headerApiKey = req.headers.get('x-goog-api-key') || undefined;
       generatedData = await generateWithGemini(requestData.prompt, requestData.type, headerApiKey);
       console.log('Dados gerados pela IA (Gemini)');
     } catch (aiErr) {
-      console.warn('Gemini falhou, retornando padrão mínimo:', (aiErr as Error).message);
-      if (requestData.type === 'columns') {
-        generatedData = [ { titulo: 'Em andamento' }, { titulo: 'Concluídas' } ];
-      } else if (requestData.type === 'columns_with_tasks') {
-        generatedData = [ { titulo: 'Em andamento', tasks: [] }, { titulo: 'Concluídas', tasks: [] } ];
-      } else {
-        generatedData = [];
-      }
+      console.warn('Gemini falhou, gerando conteúdo localmente:', (aiErr as Error).message);
+      generatedData = generateSmartData(requestData.prompt, requestData.type);
     }
 
     // Pós-processar: garantir padrão e filtrar colunas vazias/genéricas

@@ -132,28 +132,12 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         }
       }
 
-      // Adicionar automaticamente as colunas "Em Andamento" e "Concluído" vazias
-      const statusColumns = [
-        { titulo: "Em Andamento", cor: "#f59e0b" }, // amarelo
-        { titulo: "Concluído", cor: "#10b981" }     // verde
-      ];
-
-      for (const statusCol of statusColumns) {
-        const { error: statusColError } = await supabase
-          .from("columns")
-          .insert({
-            board_id: boardId,
-            titulo: statusCol.titulo,
-            posicao: nextPosition++,
-            cor: statusCol.cor,
-          });
-
-        if (statusColError) throw statusColError;
-      }
+      // Removido: não adicionar colunas de status automaticamente para evitar duplicidade.
+      // As colunas base serão tratadas pela função Edge quando necessário.
 
       toast({ 
         title: "Quadro criado com IA!", 
-        description: `${columnsWithTasks.length} colunas de projeto + 2 colunas de status foram criadas` 
+        description: `${columnsWithTasks.length} colunas de projeto foram criadas` 
       });
       setAiPrompt("");
       onColumnCreated();
