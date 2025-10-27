@@ -170,18 +170,18 @@ function generateSmartData(prompt: string, type: string) {
   } else if (type === 'columns') {
     if (isDelivery || isEcommerce) {
       return [
-        { nome: "Backlog", descricao: "Funcionalidades planejadas", cor: "#6B7280", ordem: 1 },
-        { nome: "Em Desenvolvimento", descricao: "Tarefas sendo desenvolvidas", cor: "#3B82F6", ordem: 2 },
-        { nome: "Em Teste", descricao: "Funcionalidades sendo testadas", cor: "#F59E0B", ordem: 3 },
-        { nome: "Em Homologação", descricao: "Aguardando aprovação", cor: "#8B5CF6", ordem: 4 },
-        { nome: "Concluído", descricao: "Funcionalidades finalizadas", cor: "#10B981", ordem: 5 }
+        { titulo: "Backlog" },
+        { titulo: "Em Desenvolvimento" },
+        { titulo: "Em Teste" },
+        { titulo: "Em Homologação" },
+        { titulo: "Concluído" }
       ];
     } else {
       return [
-        { nome: "A Fazer", descricao: "Tarefas pendentes", cor: "#6B7280", ordem: 1 },
-        { nome: "Em Progresso", descricao: "Tarefas em andamento", cor: "#3B82F6", ordem: 2 },
-        { nome: "Em Revisão", descricao: "Aguardando revisão", cor: "#F59E0B", ordem: 3 },
-        { nome: "Concluído", descricao: "Tarefas finalizadas", cor: "#10B981", ordem: 4 }
+        { titulo: "A Fazer" },
+        { titulo: "Em Progresso" },
+        { titulo: "Em Revisão" },
+        { titulo: "Concluído" }
       ];
     }
   } else if (type === 'columns_with_tasks') {
