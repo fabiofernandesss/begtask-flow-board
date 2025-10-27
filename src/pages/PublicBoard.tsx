@@ -243,43 +243,48 @@ const PublicBoard = () => {
 
       if (columnsError) throw columnsError;
 
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select("*")
-        .in("column_id", columnsData?.map(c => c.id) || [])
-        .order("posicao");
+      // Buscar tarefas somente se houver colunas; evitar .in([]) que pode gerar 404
+      const columnIds = (columnsData || []).map((c: any) => c.id);
+      let tasksWithEmptyArray: any[] = [];
+      if (columnIds.length > 0) {
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("tasks")
+          .select("*")
+          .in("column_id", columnIds)
+          .order("posicao");
 
-      if (tasksError) throw tasksError;
+        if (tasksError) throw tasksError;
+        tasksWithEmptyArray = tasksData || [];
+      }
 
-      const tasksWithEmptyArray = tasksData || [];
-
-      // 4. Buscar Membros da Equipe (do board)
-      const { data: teamMembersData, error: teamMembersError } = await supabase
-        .from("board_members")
-        .select("user_id, users(id, nome, foto_perfil)")
-        .eq("board_id", id);
-
-      if (teamMembersError) throw teamMembersError;
-
-      const formattedTeamMembers = teamMembersData?.map(m => m.users) || [];
-      setTeamMembers(formattedTeamMembers as TeamMember[]);
-
-      // 5. Buscar Participantes das Tarefas
-      const taskIds = tasksWithEmptyArray.map(t => t.id);
-      if (taskIds.length > 0) {
-        const { data: participantsData, error: participantsError } = await supabase
-          .from("task_participants")
-          .select("*, user:users(id, nome, foto_perfil)")
-          .in("task_id", taskIds);
-
-        if (participantsError) throw participantsError;
-        setTaskParticipants(participantsData || []);
+      // Definir membros da equipe com base nos responsáveis das tarefas (somente IDs)
+      // Evita depender de tabelas inexistentes como 'board_members' em ambientes públicos
+      const responsibleIds = Array.from(new Set((tasksWithEmptyArray || [])
+        .map((t: any) => t.responsavel_id)
+        .filter((v: string | null) => v)));
+      if (responsibleIds.length > 0) {
+        try {
+          // Em ambientes públicos, RLS pode impedir leitura de perfis; não falhar o carregamento
+          const { data: profilesData, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, nome, foto_perfil")
+            .in("id", responsibleIds as string[]);
+          if (profilesError) {
+            console.warn("Não foi possível carregar perfis dos responsáveis (RLS/permissões)", profilesError);
+            setTeamMembers([]);
+          } else {
+            setTeamMembers((profilesData || []) as TeamMember[]);
+          }
+        } catch (err) {
+          console.warn("Falha opcional ao carregar perfis dos responsáveis", err);
+          setTeamMembers([]);
+        }
       } else {
-        setTaskParticipants([]);
+        setTeamMembers([]);
       }
 
       // 6. Montar o estado final
-      const columnsWithTasks = columnsData.map((column) => ({
+      const columnsWithTasks = (columnsData || []).map((column) => ({
         ...column,
         tasks: tasksWithEmptyArray.filter((task) => task.column_id === column.id),
       }));
@@ -292,6 +297,42 @@ const PublicBoard = () => {
         description: "Não foi possível buscar os detalhes do board. " + error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  // Carregar participantes de tarefas de forma resiliente (tabela opcional)
+  const fetchTaskParticipants = async () => {
+    try {
+      const taskIds = (columns || []).flatMap((col) => (col.tasks || []).map((t) => t.id));
+      if (!taskIds || taskIds.length === 0) {
+        setTaskParticipants([]);
+        return;
+      }
+
+      // Tentar buscar participantes; se a tabela não existir ou houver RLS, não quebrar o board
+      const { data: participantsData, error: participantsError } = await supabase
+        .from("task_participants")
+        .select("id, task_id, user_id, role")
+        .in("task_id", taskIds);
+
+      if (participantsError) {
+        console.warn("Não foi possível carregar task_participants (tabela ausente/RLS)", participantsError);
+        setTaskParticipants([]);
+        return;
+      }
+
+      // Como leitura de perfis pode ser bloqueada, manter estrutura mínima sem detalhes do usuário
+      const safeParticipants = (participantsData || []).map((p: any) => ({
+        id: p.id,
+        task_id: p.task_id,
+        user_id: p.user_id,
+        role: p.role,
+        user: { id: p.user_id, nome: "Participante", foto_perfil: null } as TeamMember,
+      }));
+      setTaskParticipants(safeParticipants as any[]);
+    } catch (err) {
+      console.warn("Falha opcional ao carregar participantes de tarefas", err);
+      setTaskParticipants([]);
     }
   };
 
