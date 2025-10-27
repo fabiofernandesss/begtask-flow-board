@@ -4,166 +4,213 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 interface GenerateRequest {
   type: 'columns' | 'tasks' | 'columns_with_tasks';
-  context: string;
+  prompt?: string;  // Para compatibilidade com chamadas antigas
+  context?: string; // Para compatibilidade com chamadas novas
   columnTitle?: string;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey, x-supabase-auth, x-forwarded-for, user-agent',
+  'Access-Control-Max-Age': '86400',
+};
+
 Deno.serve(async (req: Request) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey, x-supabase-auth, x-forwarded-for, user-agent',
-        'Access-Control-Max-Age': '86400',
-      },
-    });
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Método não permitido. Use POST.' }),
+      { status: 405, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    );
   }
 
   try {
-    console.log('Iniciando processamento da requisição');
-    
-    // Verificar se a chave do Gemini está configurada
+    // Check API key
     if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY não está configurada');
       return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY não está configurada' }),
-        {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
-    }
-    
-    console.log('GEMINI_API_KEY está configurada');
-
-    if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Método não permitido. Use POST.' }),
-        {
-          status: 405,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
+        JSON.stringify({ error: 'GEMINI_API_KEY não configurada' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
-    const { type, context, columnTitle }: GenerateRequest = await req.json();
-    console.log('Dados recebidos:', { type, context: context?.substring(0, 100) + '...', columnTitle });
+    // Parse request body
+    let requestData: GenerateRequest;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: 'JSON inválido no corpo da requisição' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
 
+    const { type, prompt, context, columnTitle } = requestData;
+
+    // Validate required fields
+    if (!type) {
+      return new Response(
+        JSON.stringify({ error: 'Campo "type" é obrigatório' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Use prompt or context (for backward compatibility)
+    const userContext = context || prompt;
+    if (!userContext) {
+      return new Response(
+        JSON.stringify({ error: 'Campo "context" ou "prompt" é obrigatório' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Validate type for tasks
+    if (type === 'tasks' && !columnTitle) {
+      return new Response(
+        JSON.stringify({ error: 'Campo "columnTitle" é obrigatório para type="tasks"' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Build prompts based on type
     let systemPrompt = '';
-    if (type === 'columns') {
-      systemPrompt = 'Você é um especialista em processos gerenciais e gestão de projetos que gera colunas para quadros kanban baseadas no CONTEÚDO ESPECÍFICO das tarefas do projeto. NUNCA use nomes de processos genéricos como "A Fazer", "Em Progresso", "Aguardando Revisão", "Concluído", "Em Andamento". Crie colunas que representem as ÁREAS FUNCIONAIS, DEPARTAMENTOS ou ESPECIALIDADES TÉCNICAS do trabalho. Analise o contexto do projeto e identifique as principais áreas de conhecimento, competências ou componentes funcionais envolvidos. Retorne APENAS um array JSON com 3-5 objetos contendo "titulo" (string). Exemplos: Para desenvolvimento de software: [{"titulo":"Arquitetura e Backend"},{"titulo":"Interface e Experiência"},{"titulo":"Integração e APIs"},{"titulo":"Segurança e Compliance"}]. Para projeto de marketing: [{"titulo":"Estratégia e Planejamento"},{"titulo":"Criação de Conteúdo"},{"titulo":"Canais Digitais"},{"titulo":"Análise e Métricas"}]';
-    } else if (type === 'columns_with_tasks') {
-      systemPrompt = 'Você é um especialista em processos gerenciais e gestão de projetos que gera colunas e tarefas para quadros kanban. Crie colunas baseadas nas ÁREAS FUNCIONAIS ESPECÍFICAS do projeto (NUNCA use nomes de processos como "A Fazer", "Em Progresso", "Concluído"). Identifique as principais competências, departamentos ou especialidades técnicas envolvidas. Distribua as tarefas APENAS nessas colunas de áreas funcionais específicas. Retorne APENAS um array JSON com 3-5 objetos, cada um contendo "titulo" (string da área funcional) e "tasks" (array com 2-4 tarefas). Cada tarefa deve ter "titulo" (string conciso), "descricao" (string detalhada com 2-5 linhas explicando objetivos, metodologia e entregáveis esperados), "prioridade" ("baixa"|"media"|"alta"). As descrições devem ser profissionais e contextualizadas. Exemplo: [{"titulo":"Arquitetura e Backend","tasks":[{"titulo":"Definir arquitetura do sistema","descricao":"Elaborar a arquitetura técnica do sistema definindo padrões de desenvolvimento, estrutura de dados, APIs e integrações. Documentar decisões arquiteturais e criar diagramas técnicos para orientar a equipe de desenvolvimento. Estabelecer guidelines de performance, segurança e escalabilidade.","prioridade":"alta"}]}]';
-    } else if (type === 'tasks') {
-      systemPrompt = 'Você é um especialista em processos gerenciais que gera tarefas específicas para uma área/categoria do projeto. Crie tarefas profissionais e bem estruturadas. Retorne APENAS um array JSON com 3-7 objetos contendo "titulo" (string concisa), "descricao" (string detalhada com 2-5 linhas explicando objetivos, metodologia e entregáveis esperados), "prioridade" ("baixa"|"media"|"alta"). As descrições devem ser profissionais, contextualizadas e orientadas a resultados. Exemplo: [{"titulo":"Implementar sistema de autenticação","descricao":"Desenvolver sistema completo de autenticação incluindo registro, login, recuperação de senha e gestão de sessões. Implementar medidas de segurança como criptografia de senhas, validação de tokens e proteção contra ataques. Criar documentação técnica e testes automatizados para garantir a qualidade e confiabilidade do sistema.","prioridade":"alta"}]';
-    }
-
     let userPrompt = '';
-    if (type === 'columns') {
-      userPrompt = `Contexto do projeto: ${context}`;
-    } else if (type === 'columns_with_tasks') {
-      userPrompt = `Contexto do projeto: ${context}`;
-    } else if (type === 'tasks') {
-      userPrompt = `Contexto do projeto: ${context}. Gere tarefas para a área/categoria: ${columnTitle}`;
+
+    switch (type) {
+      case 'columns':
+        systemPrompt = 'Você é um especialista em gestão de projetos. Crie colunas para quadro kanban baseadas nas ÁREAS FUNCIONAIS específicas do projeto. NUNCA use nomes genéricos como "A Fazer", "Em Progresso", "Concluído". Identifique as principais competências, departamentos ou especialidades técnicas. Retorne APENAS um array JSON com 3-5 objetos contendo "titulo" (string). Exemplo: [{"titulo":"Arquitetura e Backend"},{"titulo":"Interface e Experiência"},{"titulo":"Integração e APIs"}]';
+        userPrompt = `Contexto do projeto: ${userContext}`;
+        break;
+
+      case 'columns_with_tasks':
+        systemPrompt = 'Você é um especialista em gestão de projetos. Crie colunas baseadas nas ÁREAS FUNCIONAIS específicas do projeto (NUNCA use "A Fazer", "Em Progresso", "Concluído") e distribua tarefas nessas áreas. Retorne APENAS um array JSON com 3-5 objetos, cada um com "titulo" (string da área funcional) e "tasks" (array com 2-4 tarefas). Cada tarefa: "titulo" (string), "descricao" (string detalhada), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"Arquitetura e Backend","tasks":[{"titulo":"Definir arquitetura","descricao":"Elaborar arquitetura técnica...","prioridade":"alta"}]}]';
+        userPrompt = `Contexto do projeto: ${userContext}`;
+        break;
+
+      case 'tasks':
+        systemPrompt = 'Você é um especialista em gestão de projetos. Crie tarefas específicas para uma área do projeto. Retorne APENAS um array JSON com 3-7 objetos contendo "titulo" (string), "descricao" (string detalhada), "prioridade" ("baixa"|"media"|"alta"). Exemplo: [{"titulo":"Implementar autenticação","descricao":"Desenvolver sistema completo...","prioridade":"alta"}]';
+        userPrompt = `Contexto do projeto: ${userContext}. Gere tarefas para a área: ${columnTitle}`;
+        break;
+
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Tipo inválido. Use: columns, tasks, ou columns_with_tasks' }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
     }
 
-    console.log('Fazendo chamada para a API do Gemini...');
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{
-            text: `${systemPrompt}\n\n${userPrompt}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2000,
+    // Call Gemini API
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2000,
+          }
+        }),
+      }
+    );
+
+    // Handle Gemini API errors
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erro na API do Gemini', 
+          details: errorText,
+          status: geminiResponse.status 
+        }),
+        { 
+          status: geminiResponse.status, 
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
         }
-      }),
-    });
-
-    console.log('Resposta da API recebida, status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro da API do Gemini:', response.status, errorText);
-      return new Response(errorText || JSON.stringify({ error: 'Gemini API error' }), {
-        status: response.status,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
+      );
     }
 
-    const data = await response.json();
-    let contentText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    // Parse Gemini response
+    const geminiData = await geminiResponse.json();
+    const contentText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    // Parse the JSON response de forma robusta
+    if (!contentText) {
+      return new Response(
+        JSON.stringify({ error: 'Resposta vazia da API do Gemini' }),
+        { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Parse JSON response with fallback
     let result;
     try {
+      // Try direct JSON parse first
       result = JSON.parse(contentText);
     } catch (parseError) {
-      // Tenta extrair JSON dentro de code fences
-      const fenceMatch = contentText.match(/```json\s*([\s\S]*?)\s*```/) || contentText.match(/```\s*([\s\S]*?)\s*```/);
-      if (fenceMatch && fenceMatch[1]) {
+      // Try to extract JSON from code fences
+      const jsonMatch = contentText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
         try {
-          result = JSON.parse(fenceMatch[1]);
+          result = JSON.parse(jsonMatch[1]);
         } catch (innerError) {
-          console.error('Failed to parse extracted JSON from Gemini:', fenceMatch[1]);
-          return new Response(JSON.stringify({ error: 'Invalid JSON response from Gemini (extracted)' }), {
-            status: 502,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
-          });
+          return new Response(
+            JSON.stringify({ 
+              error: 'Não foi possível extrair JSON válido da resposta',
+              raw_response: contentText 
+            }),
+            { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
         }
       } else {
-        console.error('Failed to parse Gemini response:', contentText);
-        return new Response(JSON.stringify({ error: 'Invalid JSON response from Gemini' }), {
-          status: 502,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Resposta não contém JSON válido',
+            raw_response: contentText 
+          }),
+          { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
       }
     }
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey, x-supabase-auth, x-forwarded-for, user-agent',
-      },
-    });
+    // Validate result structure
+    if (!Array.isArray(result)) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Resposta deve ser um array',
+          received: typeof result 
+        }),
+        { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Return success response
+    return new Response(
+      JSON.stringify({ data: result }),
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      }
+    );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Erro interno:', error);
     return new Response(
-      JSON.stringify({ error: (error as Error)?.message ?? 'Unknown error' }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+      JSON.stringify({ 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
       }
     );
   }
