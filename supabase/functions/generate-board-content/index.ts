@@ -167,7 +167,7 @@ function postProcessColumns(items: any[], type: string): any[] {
       if (t === 'em andamento' || t === 'concluídas' || t === 'concluidas') base.push(c);
       else others.push(c);
     }
-    return [...base, ...others.slice(0, 4)];
+    return [...others.slice(0, 4), ...base];
   }
 
   if (type === 'columns_with_tasks') {
@@ -185,7 +185,7 @@ function postProcessColumns(items: any[], type: string): any[] {
       if (isBase) base.push(c);
       else if ((c.tasks || []).length > 0) withTasks.push(c);
     }
-    return [...base, ...withTasks.slice(0, 4)];
+    return [...withTasks.slice(0, 4), ...base];
   }
 
   return items;
@@ -198,15 +198,15 @@ function ensureBaselineColumns(items: any[], type: string): any[] {
     const hasEmAndamento = titles.includes('em andamento');
     const hasConcluidas = titles.includes('concluídas') || titles.includes('concluidas');
     const result = [...items];
-    if (!hasEmAndamento) result.unshift({ titulo: 'Em andamento' });
     if (!hasConcluidas) result.push({ titulo: 'Concluídas' });
+    if (!hasEmAndamento) result.push({ titulo: 'Em andamento' });
     return result;
   }
   if (type === 'columns_with_tasks') {
     const titles = items.map((i) => String(i?.titulo || '').toLowerCase());
     const result = [...items];
-    if (!titles.includes('em andamento')) result.unshift({ titulo: 'Em andamento', tasks: [] });
     if (!titles.includes('concluídas') && !titles.includes('concluidas')) result.push({ titulo: 'Concluídas', tasks: [] });
+    if (!titles.includes('em andamento')) result.push({ titulo: 'Em andamento', tasks: [] });
     return result.map((c) => ({ titulo: c.titulo, tasks: Array.isArray(c.tasks) ? c.tasks : [] }));
   }
   return items;
