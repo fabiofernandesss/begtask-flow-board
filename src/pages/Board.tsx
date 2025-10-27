@@ -163,35 +163,62 @@ const Board = () => {
     try {
       const taskIds = currentColumns.flatMap(col => col.tasks.map(task => task.id));
 
-      // Buscar membros do board (para o seletor e avatares) sempre
-      const { data: teamData, error: teamError } = await supabase
-        .from("board_members")
-        .select("user_id, users(id, nome, foto_perfil)")
-        .eq("board_id", id);
-      if (teamError) throw teamError;
-      const team = (teamData || []).map((m: any) => m.users).filter(Boolean) as TeamMember[];
-      setTeamMembers(team);
+      // Derivar "membros" a partir dos responsáveis das tarefas
+      const responsibleIds = Array.from(new Set(
+        currentColumns
+          .flatMap(col => col.tasks.map(task => task.responsavel_id))
+          .filter((v): v is string => Boolean(v))
+      ));
 
+      if (responsibleIds.length > 0) {
+        try {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, nome, foto_perfil")
+            .in("id", responsibleIds);
+          if (profilesError) {
+            console.warn("Não foi possível carregar perfis dos responsáveis (RLS/permissões)", profilesError);
+            setTeamMembers([]);
+          } else {
+            setTeamMembers((profilesData || []) as TeamMember[]);
+          }
+        } catch (e) {
+          console.warn("Falha opcional ao carregar perfis dos responsáveis", e);
+          setTeamMembers([]);
+        }
+      } else {
+        setTeamMembers([]);
+      }
+
+      // Buscar participantes das tarefas de forma resiliente
       if (taskIds.length === 0) {
         setTaskParticipants([]);
         return;
       }
 
-      // Buscar participantes com join direto em users para garantir foto_perfil
-      const { data: participantsData, error: participantsError } = await supabase
-        .from("task_participants")
-        .select("id, task_id, user_id, role, user:users(id, nome, foto_perfil)")
-        .in("task_id", taskIds);
-      if (participantsError) throw participantsError;
+      try {
+        const { data: participantsData, error: participantsError } = await supabase
+          .from("task_participants")
+          .select("id, task_id, user_id, role")
+          .in("task_id", taskIds);
 
-      const participantsWithUser = (participantsData || []).map((p: any) => ({
-        id: p.id,
-        task_id: p.task_id,
-        user_id: p.user_id,
-        role: p.role,
-        user: p.user || null,
-      })) as TaskParticipant[];
-      setTaskParticipants(participantsWithUser);
+        if (participantsError) {
+          console.warn("Não foi possível carregar task_participants (tabela ausente/RLS)", participantsError);
+          setTaskParticipants([]);
+        } else {
+          const safeParticipants = (participantsData || []).map((p: any) => ({
+            id: p.id,
+            task_id: p.task_id,
+            user_id: p.user_id,
+            role: p.role,
+            user: { id: p.user_id, nome: "Participante", foto_perfil: null } as TeamMember,
+          }));
+          setTaskParticipants(safeParticipants as TaskParticipant[]);
+        }
+      } catch (e) {
+        console.warn("Falha opcional ao carregar participantes de tarefas", e);
+        setTaskParticipants([]);
+      }
     } catch (error: any) {
       console.error("Erro ao carregar membros e participantes:", error);
       setTeamMembers([]);
