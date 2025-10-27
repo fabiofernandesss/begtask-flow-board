@@ -22,6 +22,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    console.log('Iniciando processamento da requisição');
+    
     // Verificar se a chave do Gemini está configurada
     if (!GEMINI_API_KEY) {
       console.error('GEMINI_API_KEY não está configurada');
@@ -36,7 +38,10 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+    
+    console.log('GEMINI_API_KEY está configurada');
     const { type, context, columnTitle }: GenerateRequest = await req.json();
+    console.log('Dados recebidos:', { type, context: context?.substring(0, 100) + '...', columnTitle });
 
     let systemPrompt = '';
     if (type === 'columns') {
@@ -56,6 +61,7 @@ Deno.serve(async (req: Request) => {
       userPrompt = `Contexto do projeto: ${context}. Gere tarefas para a área/categoria: ${columnTitle}`;
     }
 
+    console.log('Fazendo chamada para a API do Gemini...');
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
@@ -74,8 +80,12 @@ Deno.serve(async (req: Request) => {
       }),
     });
 
+    console.log('Resposta da API recebida, status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Erro da API do Gemini:', response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
