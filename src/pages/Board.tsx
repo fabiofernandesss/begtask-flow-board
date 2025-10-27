@@ -828,8 +828,8 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
       <CreateColumnDialog
         open={columnDialogOpen}
         onOpenChange={setColumnDialogOpen}
-        boardId={id!}
-        onColumnCreated={handleColumnCreated}
+        boardId={id || ""}
+        onColumnCreated={() => fetchBoardData()}
       />
 
       <TaskDetailsModal
