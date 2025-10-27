@@ -23,6 +23,8 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
   const [aiLoading, setAiLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const finalTextRef = useRef<string>("");
+  const baseBeforeRecordingRef = useRef<string>("");
   const { toast } = useToast();
 
   // Limpa reconhecimento ao fechar modal
@@ -188,20 +190,23 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
       recognition.lang = 'pt-BR';
       recognition.continuous = true;
       recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
 
-      let finalTranscript = '';
+      // Salva o texto já digitado antes de começar a gravar
+      baseBeforeRecordingRef.current = (aiPrompt || '').trim();
+      finalTextRef.current = '';
+
       recognition.onresult = (event: any) => {
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) finalTranscript += transcript + ' ';
+          if (event.results[i].isFinal) finalTextRef.current += transcript + ' ';
           else interim += transcript;
         }
-        // Atualiza em tempo real no textarea (interim + final)
-        setAiPrompt((prev) => {
-          const base = prev?.trim() ? prev + "\n" : '';
-          return (base + (finalTranscript + interim)).trim();
-        });
+        const base = baseBeforeRecordingRef.current;
+        const recorded = (finalTextRef.current + interim).trim();
+        const next = base ? `${base}\n${recorded}` : recorded;
+        setAiPrompt(next);
       };
 
       recognition.onerror = (e: any) => {
@@ -214,7 +219,7 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         setIsRecording(false);
         // Correção de texto com IA
         try {
-          const texto = aiPrompt;
+          const texto = (aiPrompt || '').trim();
           if (texto && texto.trim()) {
             const corrected = await geminiService.correctTranscription(texto.trim());
             if (corrected) setAiPrompt(corrected);
