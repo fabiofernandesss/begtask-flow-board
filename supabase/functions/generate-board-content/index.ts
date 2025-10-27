@@ -59,13 +59,25 @@ function coerceToSchema(data: any, type: string): any[] {
 
 function buildPrompt(prompt: string, type: string): string {
   if (type === 'columns') {
-    return `Você é um gerador de estrutura de quadro Kanban em pt-BR. Dado o contexto: "${prompt}", gere um array JSON puro com 4 a 6 colunas. Cada item deve ser um objeto com a chave "titulo" (string). Evite nomes genéricos como "Backlog", "A Fazer", "Em Progresso" e "Em Revisão" — personalize os nomes de acordo com o domínio solicitado. Não inclua explicações, apenas o JSON.`;
+    return `Você é um gerador de estrutura de quadro Kanban em pt-BR. Dado: "${prompt}".
+Retorne APENAS um array JSON de objetos { "titulo": string }.
+O array DEVE começar com duas colunas padrão: "Em andamento" e "Concluídas".
+Em seguida, gere 2–4 colunas adicionais estritamente pertinentes ao domínio descrito, evitando nomes genéricos (ex.: "Backlog", "A Fazer", "Em Progresso", "Em Revisão").
+Não invente funcionalidades fora do domínio. Não inclua texto fora do JSON.`;
   }
   if (type === 'tasks') {
-    return `Gere um array JSON puro de tarefas relevantes para: "${prompt}". Cada tarefa é um objeto com as chaves: "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"), "data_entrega" (YYYY-MM-DD ou null). Não inclua texto fora do JSON.`;
+    return `Retorne APENAS um array JSON de tarefas pertinentes a: "${prompt}".
+Cada tarefa: { "titulo": string não genérico, "descricao": string com 3–5 linhas curtas separadas por "\\n", "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null }.
+Gere entre 6 e 10 tarefas.
+Não inclua texto fora do JSON.`;
   }
   // columns_with_tasks
-  return `Gere um array JSON puro de colunas com tarefas para: "${prompt}" em pt-BR. Evite nomes genéricos de coluna (ex.: "Backlog", "A Fazer", "Em Progresso"). O formato é: [ { "titulo": string, "tasks": [ { "titulo": string, "descricao": string|null, "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null } ] } ]. Não inclua nada além do JSON.`;
+  return `Retorne APENAS um array JSON de colunas com tarefas para: "${prompt}" (pt-BR).
+O array DEVE começar com duas colunas padrão: { "titulo": "Em andamento", "tasks": [] } e { "titulo": "Concluídas", "tasks": [] }.
+Em seguida, gere 2–4 colunas adicionais estritamente pertinentes ao domínio, evitando nomes genéricos (ex.: "Backlog", "A Fazer", "Em Progresso").
+Cada coluna adicional deve conter de 3 a 6 tarefas.
+Cada tarefa: { "titulo": string não genérico, "descricao": string com 3–5 linhas curtas separadas por "\\n", "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null }.
+Não inclua nada além do JSON.`;
 }
 
 async function generateWithGemini(prompt: string, type: string): Promise<any[]> {
@@ -104,6 +116,27 @@ async function generateWithGemini(prompt: string, type: string): Promise<any[]> 
     throw new Error('Resposta do Gemini não contém dados válidos');
   }
   return coerced;
+}
+
+function ensureBaselineColumns(items: any[], type: string): any[] {
+  if (!Array.isArray(items)) return items;
+  if (type === 'columns') {
+    const titles = items.map((i) => String(i?.titulo || '').toLowerCase());
+    const hasEmAndamento = titles.includes('em andamento');
+    const hasConcluidas = titles.includes('concluídas') || titles.includes('concluidas');
+    const result = [...items];
+    if (!hasEmAndamento) result.unshift({ titulo: 'Em andamento' });
+    if (!hasConcluidas) result.push({ titulo: 'Concluídas' });
+    return result;
+  }
+  if (type === 'columns_with_tasks') {
+    const titles = items.map((i) => String(i?.titulo || '').toLowerCase());
+    const result = [...items];
+    if (!titles.includes('em andamento')) result.unshift({ titulo: 'Em andamento', tasks: [] });
+    if (!titles.includes('concluídas') && !titles.includes('concluidas')) result.push({ titulo: 'Concluídas', tasks: [] });
+    return result.map((c) => ({ titulo: c.titulo, tasks: Array.isArray(c.tasks) ? c.tasks : [] }));
+  }
+  return items;
 }
 
 // Função para gerar dados inteligentes baseados no prompt
@@ -346,15 +379,24 @@ serve(async (req) => {
 
     console.log(`Gerando dados para tipo: ${requestData.type}, prompt: ${requestData.prompt}`)
 
-    // Tentar via Gemini primeiro; em caso de erro, usar fallback estático
+    // Tentar via Gemini primeiro; em caso de erro, retornar apenas colunas padrão
     let generatedData: any[];
     try {
       generatedData = await generateWithGemini(requestData.prompt, requestData.type);
       console.log('Dados gerados pela IA (Gemini)');
     } catch (aiErr) {
-      console.warn('Gemini falhou, usando fallback estático:', (aiErr as Error).message);
-      generatedData = generateSmartData(requestData.prompt, requestData.type);
+      console.warn('Gemini falhou, retornando padrão mínimo:', (aiErr as Error).message);
+      if (requestData.type === 'columns') {
+        generatedData = [ { titulo: 'Em andamento' }, { titulo: 'Concluídas' } ];
+      } else if (requestData.type === 'columns_with_tasks') {
+        generatedData = [ { titulo: 'Em andamento', tasks: [] }, { titulo: 'Concluídas', tasks: [] } ];
+      } else {
+        generatedData = [];
+      }
     }
+
+    // Garantir colunas padrão sempre presentes quando aplicável
+    generatedData = ensureBaselineColumns(generatedData, requestData.type);
 
     console.log('Dados gerados:', JSON.stringify(generatedData))
 
