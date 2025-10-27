@@ -90,23 +90,9 @@ const Board = () => {
   useEffect(() => {
     checkAuth();
     if (id) {
-      fetchBoard();
-      fetchColumns();
+      fetchBoardData();
     }
   }, [id]);
-
-  useEffect(() => {
-    if (columns && columns.length > 0) {
-      // Garantir que os membros da equipe e participantes sejam buscados
-      // após a atualização das colunas, evitando uso de estado obsoleto
-      fetchTeamMembers();
-      fetchTaskParticipants();
-    } else {
-      // Resetar estados relacionados quando não há colunas
-      setTeamMembers([]);
-      setTaskParticipants([]);
-    }
-  }, [columns]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -115,160 +101,97 @@ const Board = () => {
     }
   };
 
-  const fetchBoard = async () => {
+  const fetchBoardData = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1. Fetch board details
+      const { data: boardData, error: boardError } = await supabase
         .from("boards")
         .select("*")
         .eq("id", id)
         .single();
+      if (boardError) throw boardError;
+      setBoard(boardData);
 
-      if (error) throw error;
-      setBoard(data);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar bloco",
-        description: error.message,
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-    }
-  };
-
-  const fetchColumns = async () => {
-    try {
+      // 2. Fetch columns
       const { data: columnsData, error: columnsError } = await supabase
         .from("columns")
         .select("*")
         .eq("board_id", id)
         .order("posicao");
-
       if (columnsError) throw columnsError;
 
+      if (!columnsData || columnsData.length === 0) {
+        setColumns([]);
+        setTeamMembers([]);
+        setTaskParticipants([]);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Fetch tasks for the columns
       const { data: tasksData, error: tasksError } = await supabase
         .from("tasks")
         .select("*")
-        .in("column_id", columnsData?.map(c => c.id) || [])
+        .in("column_id", columnsData.map(c => c.id))
         .order("posicao");
-
       if (tasksError) throw tasksError;
 
-      const columnsWithTasks = (columnsData || []).map(col => ({
+      // 4. Combine columns with tasks
+      const columnsWithTasks = columnsData.map(col => ({
         ...col,
         tasks: (tasksData || []).filter(task => task.column_id === col.id)
       }));
-
       setColumns(columnsWithTasks);
+
+      // 5. Fetch team members and participants
+      await fetchTeamMembersAndParticipants(columnsWithTasks);
+
     } catch (error: any) {
       toast({
-        title: "Erro ao carregar colunas",
+        title: "Erro ao carregar o quadro",
         description: error.message,
         variant: "destructive",
       });
+      navigate("/dashboard");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembersAndParticipants = async (currentColumns: Column[]) => {
     try {
-      // Extrair IDs únicos dos responsáveis das tarefas
-      const responsavelIds = Array.from(new Set(
-        columns.flatMap(col => 
-          col.tasks
-            .filter(task => task.responsavel_id)
-            .map(task => task.responsavel_id)
-        )
-      )).filter(Boolean) as string[];
-
-      // Extrair IDs únicos dos participantes das tarefas
-      const taskIds = columns.flatMap(col => col.tasks.map(task => task.id));
-      let participantIds: string[] = [];
-      
-      if (taskIds.length > 0) {
-        const { data: participantsData } = await supabase
-          .from("task_participants")
-          .select("user_id")
-          .in("task_id", taskIds);
-        
-        participantIds = Array.from(new Set(
-          (participantsData || []).map(p => p.user_id)
-        ));
-      }
-
-      // Combinar responsáveis e participantes
-      const allUserIds = Array.from(new Set([...responsavelIds, ...participantIds]));
-
-      if (allUserIds.length === 0) {
-        setTeamMembers([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nome, foto_perfil")
-        .in("id", allUserIds);
-
-      if (error) throw error;
-      setTeamMembers(data || []);
-    } catch (error: any) {
-      console.error("Erro ao carregar membros da equipe:", error);
-      setTeamMembers([]);
-    }
-  };
-
-  const fetchTaskParticipants = async () => {
-    try {
-      if (!columns || columns.length === 0) {
-        setTaskParticipants([]);
-        return;
-      }
-
-      // Extrair todos os IDs das tarefas
-      const taskIds = columns.flatMap(col => 
-        Array.isArray(col.tasks) ? col.tasks.map(task => task.id) : []
-      );
-
+      const taskIds = currentColumns.flatMap(col => col.tasks.map(task => task.id));
       if (taskIds.length === 0) {
+        setTeamMembers([]);
         setTaskParticipants([]);
         return;
       }
 
-      // Buscar participantes das tarefas
+      // Fetch participants and their profiles
       const { data: participantsData, error: participantsError } = await supabase
         .from("task_participants")
-        .select("id, task_id, user_id, role")
+        .select(`
+          id,
+          task_id,
+          user_id,
+          role,
+          user:profiles (id, nome, foto_perfil)
+        `)
         .in("task_id", taskIds);
 
       if (participantsError) throw participantsError;
+      
+      const loadedParticipants = participantsData || [];
+      setTaskParticipants(loadedParticipants as TaskParticipant[]);
 
-      if (!participantsData || participantsData.length === 0) {
-        setTaskParticipants([]);
-        return;
-      }
-
-      // Buscar dados dos usuários
-      const userIds = [...new Set(participantsData.map(p => p.user_id))];
-      const { data: usersData, error: usersError } = await supabase
-        .from("profiles")
-        .select("id, nome, foto_perfil")
-        .in("id", userIds);
-
-      if (usersError) throw usersError;
-
-      // Combinar os dados
-      const participantsWithUsers = participantsData.map(participant => ({
-        ...participant,
-        user: usersData?.find(user => user.id === participant.user_id) || {
-          id: participant.user_id,
-          nome: "Usuário não encontrado",
-          foto_perfil: null
-        }
-      }));
-
-      setTaskParticipants(participantsWithUsers);
+      const members = loadedParticipants.map(p => p.user).filter(Boolean);
+      const uniqueMembers = Array.from(new Map(members.map(m => [m.id, m])).values());
+      setTeamMembers(uniqueMembers as TeamMember[]);
+      
     } catch (error: any) {
-      console.error("Erro ao carregar participantes das tarefas:", error);
+      console.error("Erro ao carregar membros e participantes:", error);
+      setTeamMembers([]);
       setTaskParticipants([]);
     }
   };
