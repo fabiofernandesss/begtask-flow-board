@@ -22,6 +22,20 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Verificar se a chave da OpenAI está configurada
+    if (!OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY não está configurada');
+      return new Response(
+        JSON.stringify({ error: 'OPENAI_API_KEY não está configurada' }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
     const { type, context, columnTitle }: GenerateRequest = await req.json();
 
     let systemPrompt = '';
