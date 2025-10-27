@@ -462,49 +462,69 @@ const Board = () => {
 
   const handleDeleteColumn = async (columnId: string) => {
     try {
-      // Buscar dados da coluna e tarefas antes de excluir
+      // Buscar apenas o título da coluna (evitar select aninhado que causa 406)
       const { data: columnData, error: columnError } = await supabase
         .from("columns")
-        .select(`
-          id,
-          titulo,
-          tasks (
-            id,
-            titulo,
-            responsavel_id
-          )
-        `)
+        .select("titulo")
         .eq("id", columnId)
         .single();
 
       if (columnError) throw columnError;
 
-      // Excluir a coluna (as tarefas serão excluídas em cascata)
-      const { error } = await supabase.from("columns").delete().eq("id", columnId);
-      if (error) throw error;
+      // Buscar tarefas da coluna diretamente
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select("id, titulo, responsavel_id")
+        .eq("column_id", columnId);
 
-      // Enviar notificações WhatsApp para todos os responsáveis das tarefas
-      if (columnData?.tasks && columnData.tasks.length > 0) {
-        const tasksWithResponsaveis = columnData.tasks.filter(task => task.responsavel_id);
-        
+      if (tasksError) throw tasksError;
+
+      // Se houver tarefas, remover participantes dessas tarefas primeiro
+      if (tasksData && tasksData.length > 0) {
+        const taskIds = tasksData.map(t => t.id);
+        const { error: delParticipantsError } = await supabase
+          .from("task_participants")
+          .delete()
+          .in("task_id", taskIds);
+        if (delParticipantsError) throw delParticipantsError;
+      }
+
+      // Remover tarefas da coluna (não depender de cascade)
+      const { error: delTasksError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("column_id", columnId);
+      if (delTasksError) throw delTasksError;
+
+      // Excluir a coluna
+      const { error: delColumnError } = await supabase
+        .from("columns")
+        .delete()
+        .eq("id", columnId);
+      if (delColumnError) throw delColumnError;
+
+      // Enviar notificações WhatsApp para responsáveis das tarefas removidas
+      if (tasksData && tasksData.length > 0) {
+        const tasksWithResponsaveis = tasksData.filter(task => task.responsavel_id);
+
         const notificationPromises = tasksWithResponsaveis.map(async (task) => {
           try {
             // Buscar dados do responsável
             const { data: profileData, error: profileError } = await supabase
               .from("profiles")
               .select("nome, telefone")
-              .eq("id", task.responsavel_id)
+              .eq("id", task.responsavel_id as string)
               .single();
 
             const { data: userEmail } = await supabase
               .rpc('get_user_email', { user_id: task.responsavel_id });
-            
+
             if (!profileError && profileData && (profileData.telefone || userEmail)) {
               await notificationService.notifyColumnDeleted(
                 profileData.nome,
                 profileData.telefone,
                 userEmail || '',
-                columnData.titulo,
+                columnData?.titulo || '',
                 task.titulo
               );
             }
@@ -517,7 +537,7 @@ const Board = () => {
         // Executar todas as notificações em paralelo
         await Promise.allSettled(notificationPromises);
       }
-      
+
       toast({ title: "Coluna excluída com sucesso" });
       fetchColumns();
     } catch (error: any) {
