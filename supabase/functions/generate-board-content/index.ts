@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 interface GenerateRequest {
   type: 'columns' | 'tasks' | 'columns_with_tasks';
@@ -22,11 +22,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Verificar se a chave da OpenAI está configurada
-    if (!OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY não está configurada');
+    // Verificar se a chave do Gemini está configurada
+    if (!GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY não está configurada');
       return new Response(
-        JSON.stringify({ error: 'OPENAI_API_KEY não está configurada' }),
+        JSON.stringify({ error: 'GEMINI_API_KEY não está configurada' }),
         {
           status: 500,
           headers: {
@@ -56,37 +56,38 @@ Deno.serve(async (req: Request) => {
       userPrompt = `Contexto do projeto: ${context}. Gere tarefas para a área/categoria: ${columnTitle}`;
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\n${userPrompt}`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2000,
+        }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
+    const content = data.candidates[0].content.parts[0].text;
 
     // Parse the JSON response
     let result;
     try {
       result = JSON.parse(content);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      throw new Error('Invalid JSON response from OpenAI');
+      console.error('Failed to parse Gemini response:', content);
+      throw new Error('Invalid JSON response from Gemini');
     }
 
     return new Response(JSON.stringify(result), {
