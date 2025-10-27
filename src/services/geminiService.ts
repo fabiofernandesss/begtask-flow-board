@@ -39,10 +39,10 @@ class GeminiService {
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
+          temperature: 0.5,
           topK: 1,
           topP: 1,
-          maxOutputTokens: 2000,
+          maxOutputTokens: 800,
         },
         safetySettings: [
           {
@@ -164,12 +164,15 @@ IMPORTANTE: Responda APENAS com um JSON válido no formato:
 ]
 
 Regras:
-- Gere entre 3-4 colunas específicas para o projeto
+- Se o usuário especificar explicitamente a quantidade de colunas/blocos, respeite exatamente esse número (ex.: "2 blocos" = 2 colunas)
+- Caso não especifique quantidade, gere entre 2-4 colunas específicas para o projeto
 - NÃO use colunas genéricas como "A Fazer", "Fazendo", "Feito"
-- Cada coluna deve ter 2-4 tarefas específicas
+- Se o usuário pedir colunas vazias, retorne "tasks": [] para todas as colunas
+- Quando incluir tarefas, limite a no máximo 3 por coluna, com descrições curtas (até 2 frases)
 - Tarefas devem ter título, descrição, prioridade e estimativa de horas
 - Prioridade deve ser: "alta", "media" ou "baixa"
 - Estimativa em horas (número inteiro)
+- Nunca inclua contadores/numerações soltas ou texto fora do JSON
 
 Prompt do usuário: ${prompt}`;
 
@@ -201,6 +204,25 @@ Prompt do usuário: ${prompt}`;
     }
 
     return { data };
+  }
+
+  // Corrige e melhora texto de transcrição (sem adicionar conteúdo extra)
+  async correctTranscription(texto: string): Promise<string> {
+    const systemPrompt = `Você receberá um texto transcrito em português a partir de áudio.
+
+Tarefas:
+- Corrija ortografia, acentuação e pontuação
+- Ajuste quebras de linha naturais quando fizer sentido
+- NÃO acrescente informações que não estejam no texto
+- Responda apenas com o texto corrigido, sem comentários ou marcações de código`;
+
+    const response = await this.callGemini(`${systemPrompt}
+
+Transcrição bruta:
+"""
+${texto}
+"""`);
+    return (response || '').trim();
   }
 }
 

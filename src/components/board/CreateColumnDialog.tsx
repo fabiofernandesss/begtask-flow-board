@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Mic, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { geminiService } from "@/services/geminiService";
+import { Textarea } from "@/components/ui/textarea";
 
 interface CreateColumnDialogProps {
   open: boolean;
@@ -20,7 +21,16 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
   const [aiPrompt, setAiPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+
+  // Limpa reconhecimento ao fechar modal
+  useEffect(() => {
+    if (!open && isRecording) {
+      try { stopRecording(); } catch {}
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +171,76 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
     }
   };
 
+  // Reconhecimento de voz (Web Speech API)
+  const startRecording = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        title: "Reconhecimento de voz não suportado",
+        description: "Seu navegador não suporta captura de voz. Use Chrome no desktop.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'pt-BR';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      let finalTranscript = '';
+      recognition.onresult = (event: any) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalTranscript += transcript + ' ';
+          else interim += transcript;
+        }
+        // Atualiza em tempo real no textarea (interim + final)
+        setAiPrompt((prev) => {
+          const base = prev?.trim() ? prev + "\n" : '';
+          return (base + (finalTranscript + interim)).trim();
+        });
+      };
+
+      recognition.onerror = (e: any) => {
+        console.error('Speech error', e);
+        toast({ title: 'Erro no áudio', description: 'Não foi possível processar o áudio.', variant: 'destructive' });
+        setIsRecording(false);
+      };
+
+      recognition.onend = async () => {
+        setIsRecording(false);
+        // Correção de texto com IA
+        try {
+          const texto = aiPrompt;
+          if (texto && texto.trim()) {
+            const corrected = await geminiService.correctTranscription(texto.trim());
+            if (corrected) setAiPrompt(corrected);
+          }
+        } catch (err: any) {
+          console.error('Correção de transcrição falhou', err);
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Erro ao iniciar reconhecimento', err);
+      toast({ title: 'Erro ao acessar microfone', description: 'Verifique permissões do navegador.', variant: 'destructive' });
+    }
+  };
+
+  const stopRecording = () => {
+    const rec = recognitionRef.current;
+    if (rec) {
+      try { rec.stop(); } catch {}
+    }
+    setIsRecording(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -199,12 +279,26 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
 
         <div className="space-y-3">
           <Label htmlFor="ai-prompt">Descreva o que você precisa</Label>
-          <Input
-            id="ai-prompt"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder="Ex: Projeto de desenvolvimento de software"
-          />
+          <div className="relative">
+            <Textarea
+              id="ai-prompt"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Ex: Projeto de desenvolvimento de software"
+              rows={4}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`absolute right-2 top-2 p-2 rounded-md transition-colors ${isRecording ? 'bg-destructive text-destructive-foreground' : 'bg-muted hover:bg-muted/80'}`}
+              title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
+              aria-label={isRecording ? 'Parar gravação' : 'Gravar áudio'}
+              disabled={aiLoading}
+            >
+              {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+          </div>
           <Button
             type="button"
             onClick={handleAIGenerate}
