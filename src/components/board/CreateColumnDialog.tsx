@@ -89,13 +89,33 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         throw new Error("Usuário não autenticado. Faça login novamente.");
       }
 
-      // Usar o novo serviço Gemini
-      const response = await geminiService.generateBoardContent(aiPrompt, "columns_with_tasks");
-      // Resultado bruto da IA
-      const columnsWithTasks = (response.data || []) as any[];
+      // Helpers de parsing simples do pedido
+      const extractIntent = (text: string) => {
+        const t = text.toLowerCase();
+        const colsMatch = t.match(/(\d+)\s*(coluna|colunas|bloco|blocos)/i);
+        const eachMatch = t.match(/(cada|por)\s*(coluna|bloco)[^\d]*?(\d+)\s*(tarefa|tarefas)/i) || t.match(/(\d+)\s*(tarefas|tarefa)\s*(por|em)\s*(cada\s*(coluna|bloco))/i);
+        const totalTasksMatch = !eachMatch ? t.match(/(\d+)\s*(tarefas|tarefa)\b/i) : null;
+        const requestedColumns = colsMatch ? Math.max(1, parseInt(colsMatch[1], 10)) : undefined;
+        const requestedTasksPerColumn = eachMatch ? Math.max(1, parseInt((eachMatch[3] || eachMatch[1]) as string, 10)) : undefined;
+        const requestedTotalTasks = totalTasksMatch ? Math.max(1, parseInt(totalTasksMatch[1], 10)) : undefined;
+        const bypassDefaults = !!eachMatch || (requestedTasksPerColumn !== undefined);
+        return { requestedColumns, requestedTasksPerColumn, requestedTotalTasks, bypassDefaults };
+      };
 
-      // Fallback: garantir presença de colunas padrão vazias
-      // 'Em andamento' e 'Concluídas' devem existir e SEM tarefas
+      const { requestedColumns, requestedTasksPerColumn, requestedTotalTasks, bypassDefaults } = extractIntent(aiPrompt);
+
+      // Limites de negócio solicitados
+      const maxColumns = 5;
+      const maxTasksPerCall = 20; // geraremos por coluna em chamadas separadas
+
+      // 1) Gerar apenas colunas (capadas a 5) para evitar estouro de JSON
+      const targetColumns = Math.min(requestedColumns || 3, maxColumns);
+      const generatedColumns = await geminiService.generateColumns(aiPrompt, targetColumns);
+
+      // Sanitiza e aplica limite máximo de 5
+      let result = (generatedColumns || []).filter(c => c?.titulo && c.titulo.trim()).slice(0, maxColumns).map(c => ({ titulo: c.titulo }));
+
+      // Normalização e identificação de defaults
       const norm = (s: string) => (s || '')
         .toLowerCase()
         .normalize('NFD')
@@ -106,43 +126,33 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         return n === 'em andamento' || n === 'concluidas';
       };
 
-      let result = Array.isArray(columnsWithTasks) ? [...columnsWithTasks] : [];
+      // 2) Inserir colunas (podendo ou não reforçar defaults)
+      if (!bypassDefaults) {
+        // Mantém comportamento anterior: garantir defaults vazias quando não for pedido "cada coluna com N"
+        const desiredDefaults = (result.length >= 2)
+          ? ['Em andamento', 'Concluídas']
+          : ['Em andamento'];
 
-      // Se já existirem, forçar tasks: []
-      result = result.map((col: any) => {
-        if (isDefault(col?.titulo)) {
-          return { ...col, tasks: [] };
-        }
-        return col;
-      });
+        const present = new Set(result.map((c: any) => norm(c?.titulo)));
+        const missing = desiredDefaults.filter((d) => !present.has(norm(d)));
 
-      // Definir quais defaults são desejados com base no total
-      const desiredDefaults = (result.length >= 2)
-        ? ['Em andamento', 'Concluídas']
-        : ['Em andamento'];
-
-      const present = new Set(result.map((c: any) => norm(c?.titulo)));
-      const missing = desiredDefaults.filter((d) => !present.has(norm(d)));
-
-      if (missing.length > 0) {
-        // Tentar substituir de trás pra frente colunas não padrão
-        let replaced = 0;
-        for (let i = result.length - 1; i >= 0 && replaced < missing.length; i--) {
-          const n = norm(result[i]?.titulo);
-          if (n !== 'em andamento' && n !== 'concluidas') {
-            result[i] = { titulo: missing[replaced], tasks: [] };
-            replaced++;
+        if (missing.length > 0) {
+          let replaced = 0;
+          for (let i = result.length - 1; i >= 0 && replaced < missing.length; i--) {
+            const n = norm(result[i]?.titulo);
+            if (n !== 'em andamento' && n !== 'concluidas') {
+              result[i] = { titulo: missing[replaced] } as any;
+              replaced++;
+            }
           }
-        }
-        // Se ainda faltou incluir alguma (lista muito pequena), adiciona ao final
-        for (let j = replaced; j < missing.length; j++) {
-          // Evita duplicar se já foi substituída por coincidência
-          if (!result.some((c: any) => norm(c?.titulo) === norm(missing[j]))) {
-            result.push({ titulo: missing[j], tasks: [] });
+          for (let j = replaced; j < missing.length; j++) {
+            if (!result.some((c: any) => norm(c?.titulo) === norm(missing[j]))) {
+              result.push({ titulo: missing[j] } as any);
+            }
           }
         }
       }
-      
+
       const { data: existingColumns } = await supabase
         .from("columns")
         .select("posicao")
@@ -155,12 +165,13 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         : 0;
 
       const columnColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
-      
-      // Criar colunas específicas do projeto com tarefas
+
+      // Inserir colunas e manter referência
+      const inserted: { id: string; titulo: string }[] = [];
       for (let i = 0; i < result.length; i++) {
         const col = result[i];
         const color = columnColors[i % columnColors.length];
-        
+
         const { data: newColumn, error: colError } = await supabase
           .from("columns")
           .insert({
@@ -173,27 +184,38 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
           .single();
 
         if (colError) throw colError;
+        inserted.push({ id: newColumn.id, titulo: col.titulo });
+      }
 
-        if (col.tasks && col.tasks.length > 0) {
-          const tasksToInsert = col.tasks.map((task: any, idx: number) => ({
-            column_id: newColumn.id,
-            titulo: task.titulo,
-            descricao: task.descricao || null,
-            prioridade: task.prioridade || 'media',
-            posicao: idx,
-          }));
+      // 3) Gerar tarefas por coluna em chamadas separadas (evita limite/estouro)
+      const columnsForTasks = inserted.filter(c => !isDefault(c.titulo) || bypassDefaults);
+      const defaultPerColumn = Math.min(5, Math.max(1, Math.floor(maxTasksPerCall / Math.max(1, columnsForTasks.length))));
+      const tasksPerColumn = requestedTasksPerColumn || (requestedTotalTasks ? Math.max(1, Math.floor(requestedTotalTasks / Math.max(1, columnsForTasks.length))) : defaultPerColumn);
 
-          const { error: tasksError } = await supabase
-            .from("tasks")
-            .insert(tasksToInsert);
+      let totalTasksCreated = 0;
+      for (const col of columnsForTasks) {
+        const count = Math.min(tasksPerColumn, maxTasksPerCall);
+        if (count <= 0) continue;
 
+        const aiTasks = await geminiService.generateTasksForColumn(aiPrompt, col.titulo, count);
+        const tasksToInsert = (aiTasks || []).slice(0, count).map((task, idx) => ({
+          column_id: col.id,
+          titulo: task.titulo,
+          descricao: task.descricao || null,
+          prioridade: task.prioridade || 'media',
+          posicao: idx,
+        }));
+
+        if (tasksToInsert.length > 0) {
+          const { error: tasksError } = await supabase.from("tasks").insert(tasksToInsert);
           if (tasksError) throw tasksError;
+          totalTasksCreated += tasksToInsert.length;
         }
       }
 
       toast({ 
         title: "Quadro criado com IA!", 
-        description: `${result.length} colunas de projeto foram criadas` 
+        description: `${inserted.length} colunas e ${totalTasksCreated} tarefas geradas` 
       });
       setAiPrompt("");
       onColumnCreated();

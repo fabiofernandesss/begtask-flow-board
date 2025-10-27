@@ -39,10 +39,10 @@ class GeminiService {
           }]
         }],
         generationConfig: {
-          temperature: 0.5,
+          temperature: 0.3,
           topK: 1,
           topP: 1,
-          maxOutputTokens: 800,
+          maxOutputTokens: 1200,
         },
         safetySettings: [
           {
@@ -85,7 +85,7 @@ class GeminiService {
     }
   }
 
-  async generateColumns(prompt: string): Promise<GeminiColumn[]> {
+  async generateColumns(prompt: string, count?: number): Promise<GeminiColumn[]> {
     const systemPrompt = `Você é um assistente especializado em gestão de projetos. Gere colunas específicas para o projeto baseado no prompt do usuário.
 
 IMPORTANTE: Responda APENAS com um JSON válido no formato:
@@ -96,7 +96,7 @@ IMPORTANTE: Responda APENAS com um JSON válido no formato:
 ]
 
 Regras:
-- Gere entre 3-5 colunas específicas para o projeto
+- ${count ? `Gere exatamente ${count} colunas (quando fizer sentido)` : 'Gere entre 3-5 colunas específicas para o projeto'}
 - NÃO use colunas genéricas como "A Fazer", "Fazendo", "Feito"
 - Use nomes específicos relacionados ao contexto do projeto
 - Cada coluna deve ter um título claro e descritivo
@@ -113,7 +113,7 @@ Prompt do usuário: ${prompt}`;
     return parsed.filter(col => col && col.titulo && col.titulo.trim());
   }
 
-  async generateTasks(prompt: string): Promise<GeminiTask[]> {
+  async generateTasks(prompt: string, count?: number): Promise<GeminiTask[]> {
     const systemPrompt = `Você é um assistante especializado em gestão de projetos. Gere tarefas específicas baseadas no prompt do usuário.
 
 IMPORTANTE: Responda APENAS com um JSON válido no formato:
@@ -127,10 +127,11 @@ IMPORTANTE: Responda APENAS com um JSON válido no formato:
 ]
 
 Regras:
-- Gere entre 5-8 tarefas específicas
+- ${count ? `Gere exatamente ${count} tarefas (quando fizer sentido)` : 'Gere entre 5-8 tarefas específicas'}
 - Cada tarefa deve ter título, descrição, prioridade e estimativa de horas
 - Prioridade deve ser: "alta", "media" ou "baixa"
 - Estimativa em horas (número inteiro)
+- Descrições com 2-4 frases (35-80 palavras), objetivas e úteis
 - Tarefas devem ser específicas e acionáveis
 
 Prompt do usuário: ${prompt}`;
@@ -167,11 +168,9 @@ Regras:
 - Se o usuário especificar explicitamente a quantidade de colunas/blocos, respeite exatamente esse número (ex.: "2 blocos" = 2 colunas)
 - Caso não especifique quantidade, gere entre 2-4 colunas específicas para o projeto
 - NÃO use colunas genéricas como "A Fazer", "Fazendo", "Feito"
-- Se a quantidade total de colunas for ≥ 2, GARANTA que duas colunas estejam presentes com estes títulos EXATOS e vazias: "Em andamento" e "Concluídas". Elas CONTAM dentro do total solicitado.
-- Se a quantidade total de colunas for = 1, priorize criar apenas "Em andamento" vazia.
 - Se o usuário pedir colunas vazias, retorne "tasks": [] para todas as colunas
 - Nunca adicione tarefas às colunas "Em andamento" e "Concluídas"; mantenha-as sempre com "tasks": []
-- Quando incluir tarefas, limite a no máximo 3 por coluna, com descrições curtas (até 2 frases)
+- Quando incluir tarefas, limite a no máximo 5 por coluna, com descrições objetivas
 - Tarefas devem ter título, descrição, prioridade e estimativa de horas
 - Prioridade deve ser: "alta", "media" ou "baixa"
 - Estimativa em horas (número inteiro)
@@ -207,6 +206,51 @@ Prompt do usuário: ${prompt}`;
     }
 
     return { data };
+  }
+
+  // Gera tarefas para uma coluna específica, em lotes controlados
+  async generateTasksForColumn(
+    userPrompt: string,
+    columnTitle: string,
+    count: number,
+    existingTitles: string[] = []
+  ): Promise<GeminiTask[]> {
+    const safeCount = Math.max(1, Math.min(count || 1, 20));
+    const existingList = existingTitles
+      .filter(Boolean)
+      .map(t => `"${t}"`)
+      .join(', ');
+
+    const systemPrompt = `Você é um assistente de gestão de projetos. Gere tarefas APENAS para a coluna "${columnTitle}".
+
+IMPORTANTE: Responda SOMENTE com JSON válido (sem comentários ou texto solto), no formato:
+[
+  {
+    "titulo": "Nome da Tarefa",
+    "descricao": "Descrição detalhada da tarefa",
+    "prioridade": "alta|media|baixa",
+    "estimativa_horas": 2
+  }
+]
+
+Regras:
+- Gere exatamente ${safeCount} tarefas (se não fizer sentido, ajuste levemente, mas mantenha ${safeCount} como meta)
+- Descrições entre 2-4 frases (35-80 palavras), com objetivo, critérios de aceite e resultado esperado (sem bullet points)
+- Evite títulos já usados: [${existingList || 'nenhum'}]
+- Prioridade deve ser "alta", "media" ou "baixa"
+- Estimativa em horas deve ser um número inteiro
+- NUNCA gere tarefas para colunas com título "Em andamento" ou "Concluídas"
+- Não inclua nada além do JSON solicitado
+
+Contexto do projeto e pedido do usuário:
+${userPrompt}`;
+
+    const response = await this.callGemini(systemPrompt);
+    const parsed = this.parseJsonResponse(response);
+    if (!Array.isArray(parsed)) {
+      throw new Error('Resposta deve ser um array de tarefas');
+    }
+    return parsed.filter(task => task && task.titulo && task.titulo.trim());
   }
 
   // Corrige e melhora texto de transcrição (sem adicionar conteúdo extra)
