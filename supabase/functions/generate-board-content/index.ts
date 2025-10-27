@@ -10,6 +10,102 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+
+function cleanJsonFromText(text: string): string {
+  if (!text) return "[]";
+  // Remove code fences if present
+  const fenced = text.match(/```json[\s\S]*?```/i) || text.match(/```[\s\S]*?```/);
+  const raw = fenced ? fenced[0].replace(/```json|```/gi, "").trim() : text.trim();
+  // Try to extract the first JSON object/array
+  const startIdx = Math.min(...[raw.indexOf("{"), raw.indexOf("[")].filter(i => i >= 0));
+  if (startIdx >= 0) {
+    const candidate = raw.slice(startIdx);
+    return candidate;
+  }
+  return raw;
+}
+
+function coerceToSchema(data: any, type: string): any[] {
+  if (!data) return [];
+  // Allow both { columns: [...] } or direct arrays
+  if (type === 'columns') {
+    const cols = Array.isArray(data) ? data : (data.columns || []);
+    return cols.map((c: any) => ({ titulo: c.titulo ?? c.nome ?? String(c.title || c.name || 'Sem título') }));
+  }
+  if (type === 'tasks') {
+    const tasks = Array.isArray(data) ? data : (data.tasks || []);
+    return tasks.map((t: any) => ({
+      titulo: t.titulo ?? t.title ?? 'Tarefa',
+      descricao: t.descricao ?? t.description ?? null,
+      prioridade: ['baixa','media','alta'].includes((t.prioridade || '').toLowerCase()) ? (t.prioridade as string).toLowerCase() : 'media',
+      data_entrega: t.data_entrega ?? t.deadline ?? null,
+    }));
+  }
+  if (type === 'columns_with_tasks') {
+    const cols = Array.isArray(data) ? data : (data.columns || []);
+    return cols.map((c: any) => ({
+      titulo: c.titulo ?? c.nome ?? String(c.title || c.name || 'Sem título'),
+      tasks: (c.tasks || []).map((t: any) => ({
+        titulo: t.titulo ?? t.title ?? 'Tarefa',
+        descricao: t.descricao ?? t.description ?? null,
+        prioridade: ['baixa','media','alta'].includes((t.prioridade || '').toLowerCase()) ? (t.prioridade as string).toLowerCase() : 'media',
+        data_entrega: t.data_entrega ?? t.deadline ?? null,
+      }))
+    }));
+  }
+  return [];
+}
+
+function buildPrompt(prompt: string, type: string): string {
+  if (type === 'columns') {
+    return `Você é um gerador de estrutura de quadro Kanban. Dado o contexto: "${prompt}", gere um array JSON puro com 4 a 6 colunas. Cada item deve ser um objeto com a chave "titulo" (string). Não inclua explicações, apenas o JSON.`;
+  }
+  if (type === 'tasks') {
+    return `Gere um array JSON puro de tarefas relevantes para: "${prompt}". Cada tarefa é um objeto com as chaves: "titulo" (string), "descricao" (string), "prioridade" ("baixa"|"media"|"alta"), "data_entrega" (YYYY-MM-DD ou null). Não inclua texto fora do JSON.`;
+  }
+  // columns_with_tasks
+  return `Gere um array JSON puro de colunas com tarefas para: "${prompt}". O formato é: [ { "titulo": string, "tasks": [ { "titulo": string, "descricao": string|null, "prioridade": "baixa"|"media"|"alta", "data_entrega": YYYY-MM-DD|null } ] } ]. Não inclua nada além do JSON.`;
+}
+
+async function generateWithGemini(prompt: string, type: string): Promise<any[]> {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY não configurada');
+
+  const url = `${GEMINI_URL}?key=${apiKey}`;
+  const body = {
+    contents: [
+      { role: 'user', parts: [ { text: buildPrompt(prompt, type) } ] }
+    ],
+    generationConfig: { responseMimeType: 'application/json' }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini HTTP ${res.status}: ${errText}`);
+  }
+  const out = await res.json();
+  const text = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const cleaned = cleanJsonFromText(text);
+  let parsed: any;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error(`Falha ao parsear JSON do Gemini: ${(e as Error).message}`);
+  }
+  const coerced = coerceToSchema(parsed, type);
+  if (!Array.isArray(coerced) || coerced.length === 0) {
+    throw new Error('Resposta do Gemini não contém dados válidos');
+  }
+  return coerced;
+}
+
 // Função para gerar dados inteligentes baseados no prompt
 function generateSmartData(prompt: string, type: string) {
   const lowerPrompt = prompt.toLowerCase();
@@ -222,8 +318,15 @@ serve(async (req) => {
 
     console.log(`Gerando dados para tipo: ${requestData.type}, prompt: ${requestData.prompt}`)
 
-    // Gerar dados inteligentes baseados no prompt
-    const generatedData = generateSmartData(requestData.prompt, requestData.type);
+    // Tentar via Gemini primeiro; em caso de erro, usar fallback estático
+    let generatedData: any[];
+    try {
+      generatedData = await generateWithGemini(requestData.prompt, requestData.type);
+      console.log('Dados gerados pela IA (Gemini)');
+    } catch (aiErr) {
+      console.warn('Gemini falhou, usando fallback estático:', (aiErr as Error).message);
+      generatedData = generateSmartData(requestData.prompt, requestData.type);
+    }
 
     console.log('Dados gerados:', JSON.stringify(generatedData))
 
