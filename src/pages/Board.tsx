@@ -350,7 +350,7 @@ const Board = () => {
               console.log("👤 Dados do perfil:", profileData);
 
               const { data: userEmail, error: emailError } = await supabase
-                .rpc('get_user_email', { user_id: movedTask.responsavel_id });
+                .rpc('get_user_email' as any, { user_id: movedTask.responsavel_id });
 
               if (emailError) {
                 console.error("❌ Erro ao buscar email:", emailError);
@@ -365,7 +365,7 @@ const Board = () => {
                 const notificationResult = await notificationService.sendTaskMovedNotification(
                   profileData.nome,
                   profileData.telefone,
-                  userEmail || '',
+                  String(userEmail || ''),
                   movedTask.titulo,
                   sourceCol.titulo,
                   destCol.titulo
@@ -464,7 +464,7 @@ const Board = () => {
       if (tasksData && tasksData.length > 0) {
         const taskIds = tasksData.map(t => t.id);
         const { error: delParticipantsError } = await supabase
-          .from("task_participants")
+          .from("task_participants" as any)
           .delete()
           .in("task_id", taskIds);
         if (delParticipantsError) throw delParticipantsError;
@@ -632,14 +632,15 @@ const Board = () => {
     setIsLoading(true);
 
     // Add user message to chat history
-    const newUserMessage = {
+    const newUserMessage: any = {
       id: Date.now().toString(),
       content: userMessage,
+      role: "user" as const,
       sender: "user" as const,
       timestamp: new Date().toISOString(),
     };
 
-    setChatHistory(prev => [...prev, newUserMessage]);
+    setChatHistory(prev => [...prev, newUserMessage] as any);
 
     // Salvar pergunta no localStorage para histórico de perguntas
     const savedQuestions = JSON.parse(localStorage.getItem(`board_questions_${id}`) || '[]');
@@ -657,14 +658,15 @@ const Board = () => {
       // Generate AI response
       const aiResponse = await generateAIResponse(userMessage);
       
-      const newAIMessage = {
+      const newAIMessage: any = {
         id: (Date.now() + 1).toString(),
         content: aiResponse,
+        role: "assistant" as const,
         sender: "ai" as const,
         timestamp: new Date().toISOString(),
       };
 
-      setChatHistory(prev => [...prev, newAIMessage]);
+      setChatHistory(prev => [...prev, newAIMessage] as any);
 
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
@@ -948,7 +950,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                 <p>Como posso ajudar com seu projeto hoje?</p>
               </div>
             ) : (
-              chatHistory.map((message) => (
+              chatHistory.map((message: any) => (
                 <div
                   key={message.id}
                   className={`flex gap-3 ${
@@ -968,9 +970,9 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                     }`}
                   >
                     {message.sender === "ai" ? (
-                      <ReactMarkdown className="prose prose-sm max-w-none dark:prose-invert">
-                        {message.content}
-                      </ReactMarkdown>
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
                     ) : (
                       <p className="text-sm">{message.content}</p>
                     )}

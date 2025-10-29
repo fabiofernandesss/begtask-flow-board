@@ -311,7 +311,7 @@ const PublicBoard = () => {
 
       // Tentar buscar participantes; se a tabela não existir ou houver RLS, não quebrar o board
       const { data: participantsData, error: participantsError } = await supabase
-        .from("task_participants")
+        .from("task_participants" as any)
         .select("id, task_id, user_id, role")
         .in("task_id", taskIds);
 
@@ -687,7 +687,7 @@ const PublicBoard = () => {
     try {
       // Salvar mensagem do usuário no banco de dados
       const { data: newMessage, error: messageError } = await supabase
-        .from("board_messages")
+        .from("board_messages" as any)
         .insert({
           board_id: id,
           sender_name: "Usuário Anônimo",
@@ -701,7 +701,7 @@ const PublicBoard = () => {
       if (messageError) throw messageError;
 
       // Atualizar lista de mensagens
-      setBoardMessages(prev => [...prev, newMessage]);
+      setBoardMessages(prev => [...prev, newMessage] as any);
 
       // Gerar resposta da IA usando contexto do board e permitir perguntas gerais
       const boardContext = {
@@ -767,7 +767,7 @@ const PublicBoard = () => {
 
       // Salvar resposta da IA
       const { data: aiMessage, error: aiError } = await supabase
-        .from("board_messages")
+        .from("board_messages" as any)
         .insert({
           board_id: id,
           sender_name: "Assistente IA",
@@ -781,7 +781,7 @@ const PublicBoard = () => {
       if (aiError) throw aiError;
 
       // Atualizar lista de mensagens com a resposta da IA
-      setBoardMessages(prev => [...prev, aiMessage]);
+      setBoardMessages(prev => [...prev, aiMessage] as any);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       toast({
