@@ -79,20 +79,48 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   const fetchParticipants = async () => {
     if (!task) return;
 
-    const { data, error } = await supabase
+    // Buscar participantes
+    const { data: participantsData, error: participantsError } = await supabase
       .from("task_participants" as any)
-      .select(`
-        id,
-        task_id,
-        user_id,
-        role,
-        user:profiles(id, nome, foto_perfil, telefone)
-      `)
+      .select("id, task_id, user_id, role")
       .eq("task_id", task.id);
 
-    if (!error && data) {
-      setParticipants(data as any);
+    if (participantsError || !participantsData) {
+      console.error("Erro ao buscar participantes:", participantsError);
+      setParticipants([]);
+      return;
     }
+
+    // Buscar dados dos usuários separadamente
+    const userIds = participantsData.map((p: any) => p.user_id);
+    if (userIds.length === 0) {
+      setParticipants([]);
+      return;
+    }
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, nome, foto_perfil, telefone")
+      .in("id", userIds);
+
+    if (profilesError || !profilesData) {
+      console.error("Erro ao buscar perfis:", profilesError);
+      setParticipants([]);
+      return;
+    }
+
+    // Combinar os dados
+    const participantsWithProfiles = participantsData.map((p: any) => ({
+      ...p,
+      user: profilesData.find((profile: any) => profile.id === p.user_id) || {
+        id: p.user_id,
+        nome: "Usuário",
+        foto_perfil: null,
+        telefone: ""
+      }
+    }));
+
+    setParticipants(participantsWithProfiles as any);
   };
 
   const handleAddParticipant = async (profile: Profile) => {
