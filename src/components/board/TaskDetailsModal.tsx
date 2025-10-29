@@ -18,7 +18,6 @@ interface Task {
   descricao: string | null;
   prioridade: "baixa" | "media" | "alta";
   data_entrega: string | null;
-  responsavel_id: string | null;
 }
 
 interface Profile {
@@ -52,7 +51,6 @@ const priorityColors = {
 const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsModalProps) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [participants, setParticipants] = useState<TaskParticipant[]>([]);
   const { toast } = useToast();
   const { id: boardId } = useParams();
@@ -61,13 +59,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     if (open && task) {
       fetchProfiles();
       fetchParticipants();
-      if (task?.responsavel_id) {
-        fetchSelectedUser(task.responsavel_id);
-      } else {
-        setSelectedUser(null);
-      }
     } else {
-      setSelectedUser(null);
       setParticipants([]);
     }
   }, [open, task]);
@@ -81,18 +73,6 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     if (!error && data) {
       setProfiles(data);
-    }
-  };
-
-  const fetchSelectedUser = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, nome, foto_perfil, telefone")
-      .eq("id", userId)
-      .single();
-
-    if (data) {
-      setSelectedUser(data);
     }
   };
 
@@ -112,73 +92,6 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     if (!error && data) {
       setParticipants(data as any);
-    }
-  };
-
-  const handleAssignUser = async (profile: Profile) => {
-    if (!task || !boardId) return;
-
-    try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ responsavel_id: profile.id })
-        .eq("id", task.id);
-
-      if (error) throw error;
-
-      setSelectedUser(profile);
-      
-      // Buscar email do usuário e enviar notificação
-      try {
-        const { data: userEmail, error: emailError } = await supabase
-          .rpc('get_user_email' as any, { user_id: profile.id });
-        
-        if (emailError) {
-          console.error("Erro ao buscar email do usuário:", emailError);
-        } else {
-          await notificationService.sendTaskAssignedNotification(
-            profile.nome,
-            profile.telefone,
-            String(userEmail || ''),
-            task.titulo
-          );
-        }
-      } catch (notificationError) {
-        console.error("Erro ao enviar notificação:", notificationError);
-        // Não falha a operação principal se a notificação falhar
-      }
-
-      toast({ title: "Usuário atribuído com sucesso!" });
-      onUpdate();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao atribuir usuário",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRemoveUser = async () => {
-    if (!task) return;
-
-    try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ responsavel_id: null })
-        .eq("id", task.id);
-
-      if (error) throw error;
-
-      setSelectedUser(null);
-      toast({ title: "Usuário removido da tarefa" });
-      onUpdate();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao remover usuário",
-        description: error.message,
-        variant: "destructive",
-      });
     }
   };
 
@@ -276,33 +189,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
             </div>
           </div>
 
-          {/* Responsável Atual */}
-          {selectedUser && (
-            <div>
-              <Label className="text-base mb-2 block">Participante principal</Label>
-              <div className="flex items-center gap-3 bg-muted/30 rounded-lg p-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={selectedUser.foto_perfil || undefined} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {selectedUser.nome.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{selectedUser.nome}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemoveUser}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Participantes Adicionais */}
+          {/* Participantes */}
           <div>
             <Label className="text-base mb-2 block">Participantes</Label>
             {participants.length > 0 ? (
@@ -375,43 +262,6 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                   Nenhum usuário encontrado
                 </p>
               )}
-            </div>
-          </div>
-
-          {/* Participante Principal (Responsável) */}
-          <div>
-            <Label className="text-base mb-2 block">
-              {selectedUser ? "Alterar Participante Principal" : "Atribuir Participante Principal"}
-            </Label>
-            <Input
-              placeholder="Buscar responsável..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyUp={fetchProfiles}
-              className="mb-3"
-            />
-            
-            <div className="space-y-2 max-h-[200px] overflow-y-auto">
-              {profiles.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
-                  onClick={() => handleAssignUser(profile)}
-                >
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={profile.foto_perfil || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {profile.nome.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{profile.nome}</p>
-                  </div>
-                  <Button size="sm" variant="ghost">
-                    Definir como Principal
-                  </Button>
-                </div>
-              ))}
             </div>
           </div>
         </div>

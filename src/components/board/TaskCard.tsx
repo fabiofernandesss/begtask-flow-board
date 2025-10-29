@@ -22,7 +22,6 @@ interface Task {
   descricao: string | null;
   prioridade: "baixa" | "media" | "alta";
   data_entrega: string | null;
-  responsavel_id?: string | null;
 }
 
 interface TeamMember {
@@ -57,9 +56,6 @@ const priorityColors = {
 const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskParticipants = [] }: TaskCardProps) => {
   // Obter participantes desta tarefa específica
   const participants = taskParticipants.filter(p => p.task_id === task.id);
-  
-  // Obter responsável da tarefa
-  const responsavel = teamMembers.find(member => member.id === task.responsavel_id);
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -98,59 +94,24 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                 {/* Indicadores de participantes - avatares sobrepostos */}
                 <div className="flex items-center -space-x-2">
                   {(() => {
-                    // Combinar responsável e participantes para exibição
-                    const allParticipants = [];
-                    
-                    // Adicionar responsável se existir
-                    if (responsavel) {
-                      allParticipants.push({
-                        id: `responsavel-${responsavel.id}`,
-                        user: responsavel,
-                        role: 'responsible',
-                        isResponsavel: true
-                      });
-                    }
-                    
-                    // Adicionar participantes (excluindo o responsável se já foi adicionado)
-                    participants
-                      .filter(participant => participant.user_id !== task.responsavel_id)
-                      .forEach(participant => {
-                        allParticipants.push({
-                          ...participant,
-                          isResponsavel: false
-                        });
-                      });
-                    
                     // Se não há participantes, não mostrar nada
-                    if (allParticipants.length === 0) return null;
+                    if (participants.length === 0) return null;
                     
                     const maxVisible = 4;
-                    const visibleParticipants = allParticipants.slice(0, maxVisible);
-                    const remaining = allParticipants.length - maxVisible;
+                    const visibleParticipants = participants.slice(0, maxVisible);
+                    const remaining = participants.length - maxVisible;
                     
                     return (
                       <>
                         {visibleParticipants.map((participant, index) => (
                           <Avatar 
                             key={participant.id} 
-                            className={`w-7 h-7 border-2 ring-2 ring-background ${
-                              participant.role === 'responsible' || participant.isResponsavel 
-                                ? 'border-primary z-10' 
-                                : 'border-muted'
-                            }`}
+                            className="w-7 h-7 border-2 border-muted ring-2 ring-background"
                             style={{ zIndex: maxVisible - index }}
-                            title={`${participant.user.nome} (${
-                              participant.role === 'responsible' || participant.isResponsavel 
-                                ? 'Responsável' 
-                                : 'Participante'
-                            })`}
+                            title={participant.user.nome}
                           >
                             <AvatarImage src={participant.user.foto_perfil || undefined} />
-                            <AvatarFallback className={`text-[10px] ${
-                              participant.role === 'responsible' || participant.isResponsavel
-                                ? 'bg-primary/20 text-primary' 
-                                : 'bg-muted text-muted-foreground'
-                            }`}>
+                            <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
                               {participant.user.nome.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
