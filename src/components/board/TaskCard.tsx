@@ -95,8 +95,8 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                   )}
                 </div>
                 
-                {/* Indicadores de participantes */}
-                <div className="flex items-center gap-1">
+                {/* Indicadores de participantes - avatares sobrepostos */}
+                <div className="flex items-center -space-x-2">
                   {(() => {
                     // Combinar responsável e participantes para exibição
                     const allParticipants = [];
@@ -124,30 +124,31 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                     // Se não há participantes, não mostrar nada
                     if (allParticipants.length === 0) return null;
                     
-                    const maxVisible = 3;
+                    const maxVisible = 4;
                     const visibleParticipants = allParticipants.slice(0, maxVisible);
                     const remaining = allParticipants.length - maxVisible;
                     
                     return (
                       <>
-                        {visibleParticipants.map((participant) => (
+                        {visibleParticipants.map((participant, index) => (
                           <Avatar 
                             key={participant.id} 
-                            className={`w-6 h-6 border-2 ${
+                            className={`w-7 h-7 border-2 ring-2 ring-background ${
                               participant.role === 'responsible' || participant.isResponsavel 
-                                ? 'border-primary' 
-                                : 'border-background'
+                                ? 'border-primary z-10' 
+                                : 'border-muted'
                             }`}
+                            style={{ zIndex: maxVisible - index }}
                             title={`${participant.user.nome} (${
                               participant.role === 'responsible' || participant.isResponsavel 
-                                ? 'Participante principal' 
+                                ? 'Responsável' 
                                 : 'Participante'
                             })`}
                           >
                             <AvatarImage src={participant.user.foto_perfil || undefined} />
                             <AvatarFallback className={`text-[10px] ${
                               participant.role === 'responsible' || participant.isResponsavel
-                                ? 'bg-primary/10 text-primary' 
+                                ? 'bg-primary/20 text-primary' 
                                 : 'bg-muted text-muted-foreground'
                             }`}>
                               {participant.user.nome.charAt(0).toUpperCase()}
@@ -157,8 +158,11 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
                         
                         {/* Contador de participantes adicionais */}
                         {remaining > 0 && (
-                          <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
-                            <span className="text-[10px] font-medium text-muted-foreground">
+                          <div 
+                            className="w-7 h-7 rounded-full border-2 border-muted ring-2 ring-background bg-muted flex items-center justify-center"
+                            style={{ zIndex: 0 }}
+                          >
+                            <span className="text-[10px] font-semibold text-muted-foreground">
                               +{remaining}
                             </span>
                           </div>

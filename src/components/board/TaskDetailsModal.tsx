@@ -28,6 +28,14 @@ interface Profile {
   telefone: string;
 }
 
+interface TaskParticipant {
+  id: string;
+  task_id: string;
+  user_id: string;
+  role: string;
+  user: Profile;
+}
+
 interface TaskDetailsModalProps {
   task: Task | null;
   open: boolean;
@@ -45,21 +53,22 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [participants, setParticipants] = useState<TaskParticipant[]>([]);
   const { toast } = useToast();
   const { id: boardId } = useParams();
 
   useEffect(() => {
-    if (open) {
+    if (open && task) {
       fetchProfiles();
+      fetchParticipants();
       if (task?.responsavel_id) {
         fetchSelectedUser(task.responsavel_id);
       } else {
-        // Limpar seleção ao abrir para uma tarefa sem responsável
         setSelectedUser(null);
       }
     } else {
-      // Garantir que não persista estado entre tarefas ao fechar o modal
       setSelectedUser(null);
+      setParticipants([]);
     }
   }, [open, task]);
 
@@ -84,6 +93,25 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     if (data) {
       setSelectedUser(data);
+    }
+  };
+
+  const fetchParticipants = async () => {
+    if (!task) return;
+
+    const { data, error } = await supabase
+      .from("task_participants")
+      .select(`
+        id,
+        task_id,
+        user_id,
+        role,
+        user:profiles(id, nome, foto_perfil, telefone)
+      `)
+      .eq("task_id", task.id);
+
+    if (!error && data) {
+      setParticipants(data as any);
     }
   };
 
@@ -154,6 +182,63 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     }
   };
 
+  const handleAddParticipant = async (profile: Profile) => {
+    if (!task) return;
+
+    // Verificar se já é participante
+    const isAlreadyParticipant = participants.some(p => p.user_id === profile.id);
+    if (isAlreadyParticipant) {
+      toast({ 
+        title: "Usuário já é participante",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("task_participants")
+        .insert({
+          task_id: task.id,
+          user_id: profile.id,
+          role: 'participant'
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Participante adicionado com sucesso!" });
+      fetchParticipants();
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao adicionar participante",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveParticipant = async (participantId: string) => {
+    try {
+      const { error } = await supabase
+        .from("task_participants")
+        .delete()
+        .eq("id", participantId);
+
+      if (error) throw error;
+
+      toast({ title: "Participante removido" });
+      fetchParticipants();
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover participante",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!task) return null;
 
   return (
@@ -217,13 +302,89 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
             </div>
           )}
 
-          {/* Adicionar Usuário */}
+          {/* Participantes Adicionais */}
           <div>
-            <Label className="text-base mb-2 block">
-              {selectedUser ? "Alterar Participante principal" : "Atribuir Participante principal"}
-            </Label>
+            <Label className="text-base mb-2 block">Participantes</Label>
+            {participants.length > 0 ? (
+              <div className="space-y-2 mb-3">
+                {participants.map((participant) => (
+                  <div
+                    key={participant.id}
+                    className="flex items-center gap-3 bg-muted/30 rounded-lg p-3"
+                  >
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={participant.user.foto_perfil || undefined} />
+                      <AvatarFallback className="bg-muted text-muted-foreground">
+                        {participant.user.nome.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{participant.user.nome}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveParticipant(participant.id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-3">Nenhum participante adicionado</p>
+            )}
+          </div>
+
+          {/* Adicionar Participante */}
+          <div>
+            <Label className="text-base mb-2 block">Adicionar Participante</Label>
             <Input
               placeholder="Buscar usuários..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyUp={fetchProfiles}
+              className="mb-3"
+            />
+            
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              {profiles.map((profile) => (
+                <div
+                  key={profile.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => handleAddParticipant(profile)}
+                >
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={profile.foto_perfil || undefined} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {profile.nome.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{profile.nome}</p>
+                  </div>
+                  <Button size="sm" variant="ghost">
+                    Adicionar
+                  </Button>
+                </div>
+              ))}
+              
+              {profiles.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum usuário encontrado
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Participante Principal (Responsável) */}
+          <div>
+            <Label className="text-base mb-2 block">
+              {selectedUser ? "Alterar Participante Principal" : "Atribuir Participante Principal"}
+            </Label>
+            <Input
+              placeholder="Buscar responsável..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyUp={fetchProfiles}
@@ -247,16 +408,10 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                     <p className="font-medium text-sm">{profile.nome}</p>
                   </div>
                   <Button size="sm" variant="ghost">
-                    Adicionar
+                    Definir como Principal
                   </Button>
                 </div>
               ))}
-              
-              {profiles.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum usuário encontrado
-                </p>
-              )}
             </div>
           </div>
         </div>
