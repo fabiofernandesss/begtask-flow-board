@@ -95,13 +95,13 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
               .single();
 
             const { data: userEmail } = await supabase
-              .rpc('get_user_email', { user_id: task.responsavel_id });
+              .rpc('get_user_email' as any, { user_id: task.responsavel_id });
             
             if (!profileError && profileData && (profileData.telefone || userEmail)) {
               await notificationService.notifyBoardDeleted(
                 profileData.nome,
                 profileData.telefone,
-                userEmail || '',
+                String(userEmail || ''),
                 boardData.titulo,
                 task.titulo
               );

@@ -65,13 +65,13 @@ const CommentsSection = ({ boardId, isPublic = true, className = "" }: CommentsS
     try {
       // Buscar todos os comentários do board, independente de serem públicos ou internos
       const { data, error } = await supabase
-        .from("board_comments")
+        .from("board_comments" as any)
         .select("*")
         .eq("board_id", boardId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+      setComments(data as any || []);
     } catch (error: any) {
       console.error("Erro ao carregar comentários:", error);
       toast({
@@ -97,7 +97,7 @@ const CommentsSection = ({ boardId, isPublic = true, className = "" }: CommentsS
     setSubmitting(true);
     try {
       const { error } = await supabase
-        .from("board_comments")
+        .from("board_comments" as any)
         .insert({
           board_id: boardId,
           author_name: authorName.trim(),
@@ -133,7 +133,7 @@ const CommentsSection = ({ boardId, isPublic = true, className = "" }: CommentsS
   const deleteComment = async (commentId: string) => {
     try {
       const { error } = await supabase
-        .from("board_comments")
+        .from("board_comments" as any)
         .delete()
         .eq("id", commentId);
 

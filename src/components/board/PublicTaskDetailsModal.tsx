@@ -84,14 +84,14 @@ const PublicTaskDetailsModal = ({ task, open, onOpenChange }: PublicTaskDetailsM
 
     try {
       const { data, error } = await supabase
-        .from("task_comments")
+        .from("task_comments" as any)
         .select("*")
         .eq("task_id", task.id)
         .eq("is_public", true)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+      setComments(data as any || []);
     } catch (error) {
       console.error("Erro ao buscar comentários:", error);
     }
@@ -105,7 +105,7 @@ const PublicTaskDetailsModal = ({ task, open, onOpenChange }: PublicTaskDetailsM
     setSubmitting(true);
     try {
       const { error } = await supabase
-        .from("task_comments")
+        .from("task_comments" as any)
         .insert({
           task_id: task.id,
           author_name: authorName.trim(),

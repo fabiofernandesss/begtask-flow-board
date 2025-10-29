@@ -90,7 +90,7 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
 
       // Usar o novo serviço Gemini
       const response = await geminiService.generateBoardContent(aiPrompt, "tasks");
-      const tasks = response.data || [];
+      const tasks = response.data as any[];
       
       const { data: existingTasks } = await supabase
         .from("tasks")
@@ -104,11 +104,12 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
         : 0;
 
       for (const task of tasks) {
+        const taskData: any = task;
         await supabase.from("tasks").insert({
           column_id: columnId,
-          titulo: task.titulo,
-          descricao: task.descricao || null,
-          prioridade: task.prioridade || "media",
+          titulo: taskData.titulo,
+          descricao: taskData.descricao || null,
+          prioridade: taskData.prioridade || "media",
           posicao: nextPosition++,
         });
       }

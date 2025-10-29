@@ -45,8 +45,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   const loadMessages = async () => {
     try {
       const { data: messagesData, error } = await supabase
-        .from('board_messages')
-        .select('id, content, sender, created_at')
+        .from('board_messages' as any)
+        .select('id, message_content, sender_type, sender_name, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: true });
 
@@ -56,10 +56,10 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       }
 
       if (messagesData) {
-        const formattedMessages: Message[] = messagesData.map(msg => ({
+        const formattedMessages: Message[] = messagesData.map((msg: any) => ({
           id: msg.id,
-          content: msg.content,
-          sender: msg.sender === 'IA Assistente' ? 'ai' : 'user',
+          content: msg.message_content,
+          sender: msg.sender_type === 'ai' ? 'ai' : 'user',
           timestamp: new Date(msg.created_at)
         }));
         setMessages(formattedMessages);
@@ -72,11 +72,13 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   const saveMessage = async (content: string, senderType: 'user' | 'ai') => {
     try {
       const { error } = await supabase
-        .from('board_messages')
+        .from('board_messages' as any)
         .insert({
           board_id: boardId,
-          sender: senderType === 'user' ? 'Usuário' : 'IA Assistente',
-          content: content
+          sender_type: senderType,
+          sender_name: senderType === 'user' ? 'Usuário' : 'IA Assistente',
+          message_content: content,
+          is_public: false
         });
 
       if (error) {
@@ -135,7 +137,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
 
       // Buscar comentários
       const { data: commentsData, error: commentsError } = await supabase
-        .from('board_comments')
+        .from('board_comments' as any)
         .select('id, author_name, content, is_public, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: false })
@@ -145,8 +147,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
 
       // Buscar mensagens do chat
       const { data: messagesData, error: messagesError } = await supabase
-        .from('board_messages')
-        .select('id, content, sender, created_at')
+        .from('board_messages' as any)
+        .select('id, message_content, sender_type, sender_name, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -160,11 +162,11 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         board_description: boardData.descricao,
         board_created_at: boardData.created_at,
         is_public: boardData.publico,
-        owner_name: boardData.users?.nome || 'Usuário',
+        owner_name: (boardData as any).profiles?.nome || 'Usuário',
         columns: columnsData || [],
-        tasks: tasksData?.map(task => ({
+        tasks: tasksData?.map((task: any) => ({
           ...task,
-          responsible: task.users?.nome || 'Não atribuído',
+          responsible: task.profiles?.nome || 'Não atribuído',
           column_title: task.columns?.titulo || ''
         })) || [],
         board_comments: commentsData || [],
@@ -217,10 +219,10 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       const message = userMessage.toLowerCase();
       
       // Informações disponíveis do board
-      const taskCount = boardContext.statistics.total_tasks;
-      const columnCount = boardContext.statistics.total_columns;
-      const commentCount = boardContext.statistics.total_comments;
-      const messageCount = boardContext.statistics.total_messages;
+      const taskCount = (boardContext as any).stats?.total_tasks || 0;
+      const columnCount = (boardContext as any).stats?.total_columns || 0;
+      const commentCount = (boardContext as any).stats?.total_comments || 0;
+      const messageCount = (boardContext as any).stats?.total_messages || 0;
       
       // Resposta contextual e livre
       if (message.includes('tarefas') || message.includes('tasks') || message.includes('task')) {

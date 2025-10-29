@@ -198,7 +198,7 @@ const Board = () => {
 
       try {
         const { data: participantsData, error: participantsError } = await supabase
-          .from("task_participants")
+          .from("task_participants" as any)
           .select("id, task_id, user_id, role")
           .in("task_id", taskIds);
 
@@ -498,13 +498,13 @@ const Board = () => {
               .single();
 
             const { data: userEmail } = await supabase
-              .rpc('get_user_email', { user_id: task.responsavel_id });
+              .rpc('get_user_email' as any, { user_id: task.responsavel_id });
 
             if (!profileError && profileData && (profileData.telefone || userEmail)) {
               await notificationService.notifyColumnDeleted(
                 profileData.nome,
                 profileData.telefone,
-                userEmail || '',
+                String(userEmail || ''),
                 columnData?.titulo || '',
                 task.titulo
               );
@@ -551,7 +551,7 @@ const Board = () => {
           .single();
 
         const { data: userEmail } = await supabase
-          .rpc('get_user_email', { user_id: taskData.responsavel_id });
+          .rpc('get_user_email' as any, { user_id: taskData.responsavel_id });
         
         if (!profileError && profileData) {
           responsavelData = {

@@ -100,7 +100,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     if (!task) return;
 
     const { data, error } = await supabase
-      .from("task_participants")
+      .from("task_participants" as any)
       .select(`
         id,
         task_id,
@@ -131,7 +131,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       // Buscar email do usuário e enviar notificação
       try {
         const { data: userEmail, error: emailError } = await supabase
-          .rpc('get_user_email', { user_id: profile.id });
+          .rpc('get_user_email' as any, { user_id: profile.id });
         
         if (emailError) {
           console.error("Erro ao buscar email do usuário:", emailError);
@@ -139,7 +139,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
           await notificationService.sendTaskAssignedNotification(
             profile.nome,
             profile.telefone,
-            userEmail || '',
+            String(userEmail || ''),
             task.titulo
           );
         }
@@ -197,7 +197,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     try {
       const { error } = await supabase
-        .from("task_participants")
+        .from("task_participants" as any)
         .insert({
           task_id: task.id,
           user_id: profile.id,
@@ -221,7 +221,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   const handleRemoveParticipant = async (participantId: string) => {
     try {
       const { error } = await supabase
-        .from("task_participants")
+        .from("task_participants" as any)
         .delete()
         .eq("id", participantId);
 
