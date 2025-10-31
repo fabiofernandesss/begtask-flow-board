@@ -26,6 +26,7 @@ interface Profile {
   nome: string;
   foto_perfil: string | null;
   telefone: string;
+  email?: string;
 }
 
 interface TaskParticipant {
@@ -80,7 +81,13 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, nome, foto_perfil, telefone")
+      .select(`
+        id, 
+        nome, 
+        foto_perfil, 
+        telefone,
+        users:auth.users!inner(email)
+      `)
       .ilike("nome", `%${searchTerm}%`)
       .limit(10);
 
@@ -89,7 +96,12 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     if (!error && data) {
       console.log("✅ Perfis carregados:", data.length, "perfis encontrados");
-      setProfiles(data);
+      // Mapear os dados para incluir o email
+      const profilesWithEmail = data.map((profile: any) => ({
+        ...profile,
+        email: profile.users?.email || null
+      }));
+      setProfiles(profilesWithEmail);
     } else {
       console.log("❌ Erro ao carregar perfis ou nenhum dado retornado");
     }
@@ -119,7 +131,13 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, nome, foto_perfil, telefone")
+      .select(`
+        id, 
+        nome, 
+        foto_perfil, 
+        telefone,
+        users:auth.users!inner(email)
+      `)
       .in("id", userIds);
 
     if (profilesError || !profilesData) {
@@ -129,15 +147,22 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     }
 
     // Combinar os dados
-    const participantsWithProfiles = participantsData.map((p: any) => ({
-      ...p,
-      user: profilesData.find((profile: any) => profile.id === p.user_id) || {
-        id: p.user_id,
-        nome: "Usuário",
-        foto_perfil: null,
-        telefone: ""
-      }
-    }));
+    const participantsWithProfiles = participantsData.map((p: any) => {
+      const profile = profilesData.find((profile: any) => profile.id === p.user_id);
+      return {
+        ...p,
+        user: profile ? {
+          ...profile,
+          email: profile.users?.email || null
+        } : {
+          id: p.user_id,
+          nome: "Usuário",
+          foto_perfil: null,
+          telefone: "",
+          email: null
+        }
+      };
+    });
 
     setParticipants(participantsWithProfiles as any);
   };
@@ -192,11 +217,12 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       
       // Enviar notificação para o participante adicionado
       console.log("📧 Enviando notificação para o participante...");
+      console.log("📧 Email do participante:", profile.email);
       try {
         await notificationService.sendTaskAssignedNotification(
           profile.nome,
           profile.telefone,
-          profile.id, // Usando ID como email temporariamente
+          profile.email || null,
           task.titulo
         );
         console.log("✅ Notificação enviada com sucesso!");
@@ -278,9 +304,10 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       console.log("📤 Enviando notificações para participantes...");
       for (const participant of participants) {
         try {
+          console.log(`📧 Email do participante ${participant.user.nome}:`, participant.user.email);
           await notificationService.notifyTaskUpdated(
             participant.user.telefone,
-            participant.user.id, // Usando ID como email temporariamente
+            participant.user.email || null,
             participant.user.nome,
             editedTask.titulo
           );
