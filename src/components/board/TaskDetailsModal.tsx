@@ -85,8 +85,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
         id, 
         nome, 
         foto_perfil, 
-        telefone,
-        users:auth.users!inner(email)
+        telefone
       `)
       .ilike("nome", `%${searchTerm}%`)
       .limit(10);
@@ -96,11 +95,26 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     if (!error && data) {
       console.log("✅ Perfis carregados:", data.length, "perfis encontrados");
+      
+      // Buscar emails dos usuários separadamente
+      const userIds = data.map((profile: any) => profile.id);
+      const { data: usersData, error: usersError } = await supabase
+        .from("auth.users")
+        .select("id, email")
+        .in("id", userIds);
+
+      if (usersError) {
+        console.error("Erro ao buscar emails dos usuários:", usersError);
+      }
+
       // Mapear os dados para incluir o email
-      const profilesWithEmail = data.map((profile: any) => ({
-        ...profile,
-        email: profile.users?.email || null
-      }));
+      const profilesWithEmail = data.map((profile: any) => {
+        const user = usersData?.find((user: any) => user.id === profile.id);
+        return {
+          ...profile,
+          email: user?.email || null
+        };
+      });
       setProfiles(profilesWithEmail);
     } else {
       console.log("❌ Erro ao carregar perfis ou nenhum dado retornado");
@@ -135,9 +149,14 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
         id, 
         nome, 
         foto_perfil, 
-        telefone,
-        users!inner(email)
+        telefone
       `)
+      .in("id", userIds);
+
+    // Buscar emails dos usuários separadamente
+    const { data: usersData, error: usersError } = await supabase
+      .from("auth.users")
+      .select("id, email")
       .in("id", userIds);
 
     if (profilesError || !profilesData) {
@@ -146,14 +165,19 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       return;
     }
 
+    if (usersError) {
+      console.error("Erro ao buscar usuários:", usersError);
+    }
+
     // Combinar os dados
     const participantsWithProfiles = participantsData.map((p: any) => {
       const profile = profilesData.find((profile: any) => profile.id === p.user_id);
+      const user = usersData?.find((user: any) => user.id === p.user_id);
       return {
         ...p,
         user: profile ? {
           ...profile,
-          email: profile.users?.email || null
+          email: user?.email || null
         } : {
           id: p.user_id,
           nome: "Usuário",
