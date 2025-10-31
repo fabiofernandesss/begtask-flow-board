@@ -321,15 +321,46 @@ const PublicBoard = () => {
         return;
       }
 
-      // Como leitura de perfis pode ser bloqueada, manter estrutura mínima sem detalhes do usuário
-      const safeParticipants = (participantsData || []).map((p: any) => ({
-        id: p.id,
-        task_id: p.task_id,
-        user_id: p.user_id,
-        role: p.role,
-        user: { id: p.user_id, nome: "Participante", foto_perfil: null } as TeamMember,
-      }));
-      setTaskParticipants(safeParticipants as any[]);
+      if (participantsData && participantsData.length > 0) {
+        // Buscar dados dos usuários participantes
+        const userIds = [...new Set(participantsData.map((p: any) => p.user_id))];
+        
+        const { data: usersData, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, nome, foto_perfil")
+          .in("id", userIds);
+
+        if (usersError) {
+          console.warn("Erro ao buscar dados dos usuários participantes:", usersError);
+          // Manter estrutura mínima se não conseguir buscar perfis
+          const safeParticipants = participantsData.map((p: any) => ({
+            id: p.id,
+            task_id: p.task_id,
+            user_id: p.user_id,
+            role: p.role,
+            user: { id: p.user_id, nome: "Participante", foto_perfil: null } as TeamMember,
+          }));
+          setTaskParticipants(safeParticipants as any[]);
+        } else {
+          const safeParticipants = participantsData.map((p: any) => {
+            const userData = usersData?.find((u: any) => u.id === p.user_id);
+            return {
+              id: p.id,
+              task_id: p.task_id,
+              user_id: p.user_id,
+              role: p.role,
+              user: {
+                id: p.user_id,
+                nome: userData?.nome || "Participante",
+                foto_perfil: userData?.foto_perfil || null
+              } as TeamMember,
+            };
+          });
+          setTaskParticipants(safeParticipants as any[]);
+        }
+      } else {
+        setTaskParticipants([]);
+      }
     } catch (err) {
       console.warn("Falha opcional ao carregar participantes de tarefas", err);
       setTaskParticipants([]);

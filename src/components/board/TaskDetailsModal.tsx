@@ -136,7 +136,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
         nome, 
         foto_perfil, 
         telefone,
-        users:auth.users!inner(email)
+        users!inner(email)
       `)
       .in("id", userIds);
 
