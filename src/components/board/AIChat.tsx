@@ -70,22 +70,36 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   };
 
   const saveMessage = async (content: string, senderType: 'user' | 'ai') => {
+    console.log('💾 saveMessage iniciado:', { senderType, boardId, contentLength: content.length });
+    
     try {
+      const messageData = {
+        board_id: boardId,
+        sender_type: senderType,
+        sender_name: senderType === 'user' ? 'Usuário' : 'IA Assistente',
+        message_content: content,
+        is_public: false
+      };
+      
+      console.log('📤 Enviando dados para Supabase:', messageData);
+      
       const { error } = await supabase
         .from('board_messages' as any)
-        .insert({
-          board_id: boardId,
-          sender_type: senderType,
-          sender_name: senderType === 'user' ? 'Usuário' : 'IA Assistente',
-          message_content: content,
-          is_public: false
-        });
+        .insert(messageData);
 
       if (error) {
-        console.error('Erro ao salvar mensagem:', error);
+        console.error('❌ Erro do Supabase ao salvar mensagem:', error);
+        console.error('❌ Detalhes do erro:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+      } else {
+        console.log('✅ Mensagem salva com sucesso no Supabase');
       }
     } catch (error) {
-      console.error('Erro ao salvar mensagem:', error);
+      console.error('❌ Erro geral ao salvar mensagem:', error);
     }
   };
 
@@ -417,8 +431,16 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   };
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+    console.log('🚀 handleSendMessage iniciado');
+    console.log('📝 inputValue:', inputValue);
+    console.log('⏳ isLoading:', isLoading);
+    
+    if (!inputValue.trim() || isLoading) {
+      console.log('❌ Condição de saída: inputValue vazio ou isLoading true');
+      return;
+    }
 
+    console.log('✅ Criando mensagem do usuário...');
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputValue,
@@ -427,16 +449,25 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     };
 
     setMessages(prev => [...prev, userMessage]);
+    console.log('✅ Mensagem do usuário adicionada ao estado');
     
     // Salvar mensagem do usuário no banco
+    console.log('💾 Salvando mensagem do usuário no banco...');
     await saveMessage(inputValue, 'user');
+    console.log('✅ Mensagem do usuário salva no banco');
     
     setInputValue('');
     setIsLoading(true);
+    console.log('⏳ Estado de loading ativado');
 
     try {
+      console.log('📊 Buscando dados do board...');
       const boardData = await getBoardData();
+      console.log('✅ Dados do board obtidos:', boardData ? 'Sucesso' : 'Falhou');
+      
+      console.log('🤖 Gerando resposta da IA...');
       const aiResponse = await generateAIResponse(inputValue, boardData);
+      console.log('✅ Resposta da IA gerada:', aiResponse.substring(0, 50) + '...');
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -446,11 +477,15 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      console.log('✅ Mensagem da IA adicionada ao estado');
       
       // Salvar resposta da IA no banco
+      console.log('💾 Salvando resposta da IA no banco...');
       await saveMessage(aiResponse, 'ai');
+      console.log('✅ Resposta da IA salva no banco');
       
     } catch (error) {
+      console.error('❌ Erro em handleSendMessage:', error);
       toast({
         title: "Erro",
         description: "Não foi possível processar sua mensagem.",
@@ -458,6 +493,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
       });
     } finally {
       setIsLoading(false);
+      console.log('✅ handleSendMessage finalizado');
     }
   };
 

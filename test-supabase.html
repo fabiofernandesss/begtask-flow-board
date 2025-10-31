@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste de Conexão Supabase</h1>
+    <button onclick="testConnection()">Testar Conexão</button>
+    <div id="result"></div>
+
+    <script>
+        const SUPABASE_URL = "https://ejmbwemerkdmqyrspijz.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqbWJ3ZW1lcmtkbXF5cnNwaWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDg1NTAsImV4cCI6MjA3NjgyNDU1MH0.LqaUvRquILI-T5hGtyNf2ZsRyeyjA2qaBb1BQqGsykY";
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testando...';
+            
+            try {
+                // Teste 1: Buscar a tarefa específica
+                console.log('Testando busca da tarefa específica...');
+                const { data: taskData, error: taskError } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('id', 'e561e3be-0569-401b-8f62-ec02fc5f98b3');
+                
+                if (taskError) {
+                    console.error('Erro na busca da tarefa:', taskError);
+                    resultDiv.innerHTML = `<p style="color: red;">Erro na busca da tarefa: ${taskError.message}</p>`;
+                    return;
+                }
+                
+                console.log('Tarefa encontrada:', taskData);
+                
+                // Teste 2: Buscar todas as tarefas de boards públicos
+                console.log('Testando busca de tarefas de boards públicos...');
+                const { data: publicTasks, error: publicError } = await supabase
+                    .from('tasks')
+                    .select(`
+                        *,
+                        columns!inner(
+                            *,
+                            boards!inner(
+                                id,
+                                titulo,
+                                publico
+                            )
+                        )
+                    `)
+                    .eq('columns.boards.publico', true);
+                
+                if (publicError) {
+                    console.error('Erro na busca de tarefas públicas:', publicError);
+                    resultDiv.innerHTML = `<p style="color: red;">Erro na busca de tarefas públicas: ${publicError.message}</p>`;
+                    return;
+                }
+                
+                console.log('Tarefas públicas encontradas:', publicTasks);
+                
+                resultDiv.innerHTML = `
+                    <h3>✅ Conexão bem-sucedida!</h3>
+                    <p><strong>Tarefa específica:</strong> ${taskData?.length || 0} resultado(s)</p>
+                    <p><strong>Tarefas públicas:</strong> ${publicTasks?.length || 0} resultado(s)</p>
+                    <pre>${JSON.stringify({ taskData, publicTasks }, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('Erro geral:', error);
+                resultDiv.innerHTML = `<p style="color: red;">Erro geral: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
