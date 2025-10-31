@@ -65,14 +65,22 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   }, [open, task]);
 
   const fetchProfiles = async () => {
+    console.log("🔍 fetchProfiles chamada com searchTerm:", searchTerm);
+    
     const { data, error } = await supabase
       .from("profiles")
       .select("id, nome, foto_perfil, telefone")
       .ilike("nome", `%${searchTerm}%`)
       .limit(10);
 
+    console.log("📊 fetchProfiles - data:", data);
+    console.log("📊 fetchProfiles - error:", error);
+
     if (!error && data) {
+      console.log("✅ Perfis carregados:", data.length, "perfis encontrados");
       setProfiles(data);
+    } else {
+      console.log("❌ Erro ao carregar perfis ou nenhum dado retornado");
     }
   };
 
@@ -124,11 +132,22 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   };
 
   const handleAddParticipant = async (profile: Profile) => {
-    if (!task) return;
+    console.log("🚀 handleAddParticipant chamada com profile:", profile);
+    
+    if (!task) {
+      console.log("❌ Task não encontrada, retornando");
+      return;
+    }
+
+    console.log("📋 Task atual:", task);
+    console.log("👥 Participantes atuais:", participants);
 
     // Verificar se já é participante
     const isAlreadyParticipant = participants.some(p => p.user_id === profile.id);
+    console.log("🔍 Verificando se já é participante:", isAlreadyParticipant);
+    
     if (isAlreadyParticipant) {
+      console.log("⚠️ Usuário já é participante");
       toast({ 
         title: "Usuário já é participante",
         variant: "destructive" 
@@ -137,20 +156,35 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     }
 
     try {
-      const { error } = await supabase
+      console.log("💾 Tentando inserir participante no Supabase...");
+      const insertData = {
+        task_id: task.id,
+        user_id: profile.id,
+        role: 'participant'
+      };
+      console.log("📝 Dados para inserção:", insertData);
+
+      const { error, data } = await supabase
         .from("task_participants" as any)
-        .insert({
-          task_id: task.id,
-          user_id: profile.id,
-          role: 'participant'
-        });
+        .insert(insertData);
 
-      if (error) throw error;
+      console.log("📊 Resposta do Supabase - data:", data);
+      console.log("📊 Resposta do Supabase - error:", error);
 
+      if (error) {
+        console.log("❌ Erro do Supabase:", error);
+        throw error;
+      }
+
+      console.log("✅ Participante adicionado com sucesso!");
       toast({ title: "Participante adicionado com sucesso!" });
+      
+      console.log("🔄 Atualizando lista de participantes...");
       fetchParticipants();
       onUpdate();
     } catch (error: any) {
+      console.log("💥 Erro capturado:", error);
+      console.log("💥 Mensagem do erro:", error.message);
       toast({
         title: "Erro ao adicionar participante",
         description: error.message,
@@ -268,7 +302,10 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                 <div
                   key={profile.id}
                   className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
-                  onClick={() => handleAddParticipant(profile)}
+                  onClick={() => {
+                    console.log("🖱️ Clique detectado no perfil:", profile);
+                    handleAddParticipant(profile);
+                  }}
                 >
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={profile.foto_perfil || undefined} />
