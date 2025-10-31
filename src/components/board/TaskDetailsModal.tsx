@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, User, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, User, X, Edit, Save, Cancel } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notificationService } from "@/services/notificationService";
@@ -52,6 +53,12 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [participants, setParticipants] = useState<TaskParticipant[]>([]);
+  
+  // Estados para edição
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTask, setEditedTask] = useState<Task | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const { toast } = useToast();
   const { id: boardId } = useParams();
 
@@ -59,8 +66,12 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     if (open && task) {
       fetchProfiles();
       fetchParticipants();
+      setEditedTask(task);
+      setIsEditing(false);
     } else {
       setParticipants([]);
+      setEditedTask(null);
+      setIsEditing(false);
     }
   }, [open, task]);
 
@@ -179,6 +190,21 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       console.log("✅ Participante adicionado com sucesso!");
       toast({ title: "Participante adicionado com sucesso!" });
       
+      // Enviar notificação para o participante adicionado
+      console.log("📧 Enviando notificação para o participante...");
+      try {
+        await notificationService.sendTaskAssignedNotification(
+          profile.nome,
+          profile.telefone,
+          profile.id, // Usando ID como email temporariamente
+          task.titulo
+        );
+        console.log("✅ Notificação enviada com sucesso!");
+      } catch (notificationError) {
+        console.log("❌ Erro ao enviar notificação:", notificationError);
+        // Não falha a operação principal se a notificação falhar
+      }
+      
       console.log("🔄 Atualizando lista de participantes...");
       fetchParticipants();
       onUpdate();
@@ -214,41 +240,192 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     }
   };
 
+  const handleEditTask = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedTask(task);
+  };
+
+  const handleSaveTask = async () => {
+    if (!editedTask || !task) return;
+
+    setIsSaving(true);
+    try {
+      console.log("💾 Salvando alterações da tarefa:", editedTask);
+      
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          titulo: editedTask.titulo,
+          descricao: editedTask.descricao,
+          prioridade: editedTask.prioridade,
+          data_entrega: editedTask.data_entrega,
+        })
+        .eq("id", task.id);
+
+      if (error) throw error;
+
+      console.log("✅ Tarefa atualizada com sucesso!");
+      toast({ title: "Tarefa atualizada com sucesso!" });
+      
+      setIsEditing(false);
+      onUpdate();
+      
+      // Chamar notificação para participantes
+      console.log("📤 Enviando notificações para participantes...");
+      for (const participant of participants) {
+        try {
+          await notificationService.notifyTaskUpdated(
+            participant.user.telefone,
+            participant.user.id, // Usando ID como email temporariamente
+            participant.user.nome,
+            editedTask.titulo
+          );
+          console.log(`✅ Notificação enviada para ${participant.user.nome}`);
+        } catch (notificationError) {
+          console.error(`❌ Erro ao enviar notificação para ${participant.user.nome}:`, notificationError);
+        }
+      }
+      
+    } catch (error: any) {
+      console.error("❌ Erro ao salvar tarefa:", error);
+      toast({
+        title: "Erro ao salvar tarefa",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!task) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">{task.titulo}</DialogTitle>
-          <DialogDescription>
-            Visualize e edite os detalhes desta tarefa
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl">
+                {isEditing ? "Editando Tarefa" : task.titulo}
+              </DialogTitle>
+              <DialogDescription>
+                {isEditing ? "Edite os detalhes desta tarefa" : "Visualize e edite os detalhes desta tarefa"}
+              </DialogDescription>
+            </div>
+            <div className="flex gap-2">
+              {!isEditing ? (
+                <Button variant="outline" size="sm" onClick={handleEditTask}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancelar
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveTask}
+                    disabled={isSaving}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? "Salvando..." : "Salvar"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Título */}
+          {isEditing && (
+            <div>
+              <Label className="text-base mb-2 block">Título</Label>
+              <Input
+                value={editedTask?.titulo || ""}
+                onChange={(e) => setEditedTask(prev => prev ? {...prev, titulo: e.target.value} : null)}
+                placeholder="Digite o título da tarefa"
+              />
+            </div>
+          )}
+
           {/* Prioridade e Data */}
           <div className="flex items-center gap-4 flex-wrap">
-            <Badge variant="outline" className={priorityColors[task.prioridade]}>
-              Prioridade: {task.prioridade}
-            </Badge>
-            
-            {task.data_entrega && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                Entrega: {new Date(task.data_entrega).toLocaleDateString('pt-BR')}
-              </div>
+            {isEditing ? (
+              <>
+                <div>
+                  <Label className="text-sm mb-1 block">Prioridade</Label>
+                  <Select
+                    value={editedTask?.prioridade || "media"}
+                    onValueChange={(value: "baixa" | "media" | "alta") => 
+                      setEditedTask(prev => prev ? {...prev, prioridade: value} : null)
+                    }
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="baixa">Baixa</SelectItem>
+                      <SelectItem value="media">Média</SelectItem>
+                      <SelectItem value="alta">Alta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm mb-1 block">Data de Entrega</Label>
+                  <Input
+                    type="date"
+                    value={editedTask?.data_entrega || ""}
+                    onChange={(e) => setEditedTask(prev => prev ? {...prev, data_entrega: e.target.value} : null)}
+                    className="w-40"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <Badge variant="outline" className={priorityColors[task.prioridade]}>
+                  Prioridade: {task.prioridade}
+                </Badge>
+                
+                {task.data_entrega && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    Entrega: {new Date(task.data_entrega).toLocaleDateString('pt-BR')}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* Descrição */}
           <div>
             <Label className="text-base mb-2 block">Descrição</Label>
-            <div className="bg-muted/30 rounded-lg p-4 min-h-[100px]">
-              <p className="text-sm text-foreground whitespace-pre-wrap">
-                {task.descricao || "Sem descrição"}
-              </p>
-            </div>
+            {isEditing ? (
+              <Textarea
+                value={editedTask?.descricao || ""}
+                onChange={(e) => setEditedTask(prev => prev ? {...prev, descricao: e.target.value} : null)}
+                placeholder="Digite a descrição da tarefa"
+                className="min-h-[100px]"
+              />
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[100px]">
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {task.descricao || "Sem descrição"}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Participantes */}
