@@ -99,9 +99,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       // Buscar emails dos usuários separadamente
       const userIds = data.map((profile: any) => profile.id);
       const { data: usersData, error: usersError } = await supabase
-        .from("auth.users")
-        .select("id, email")
-        .in("id", userIds);
+        .rpc("get_user_emails", { user_ids: userIds });
 
       if (usersError) {
         console.error("Erro ao buscar emails dos usuários:", usersError);
@@ -155,9 +153,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     // Buscar emails dos usuários separadamente
     const { data: usersData, error: usersError } = await supabase
-      .from("auth.users")
-      .select("id, email")
-      .in("id", userIds);
+      .rpc("get_user_emails", { user_ids: userIds });
 
     if (profilesError || !profilesData) {
       console.error("Erro ao buscar perfis:", profilesError);
