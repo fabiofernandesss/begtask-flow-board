@@ -41,6 +41,102 @@ export type Database = {
         }
         Relationships: []
       }
+      board_comments: {
+        Row: {
+          author_name: string
+          board_id: string
+          content: string
+          created_at: string
+          id: string
+          is_public: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          author_name: string
+          board_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string
+          board_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_comments_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "board_ai_view"
+            referencedColumns: ["board_id"]
+          },
+          {
+            foreignKeyName: "board_comments_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_messages: {
+        Row: {
+          board_id: string
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          message_content: string
+          sender_email: string | null
+          sender_name: string
+          sender_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          board_id: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          message_content: string
+          sender_email?: string | null
+          sender_name: string
+          sender_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          board_id?: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          message_content?: string
+          sender_email?: string | null
+          sender_name?: string
+          sender_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_messages_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "board_ai_view"
+            referencedColumns: ["board_id"]
+          },
+          {
+            foreignKeyName: "board_messages_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boards: {
         Row: {
           created_at: string
@@ -107,10 +203,62 @@ export type Database = {
             foreignKeyName: "columns_board_id_fkey"
             columns: ["board_id"]
             isOneToOne: false
+            referencedRelation: "board_ai_view"
+            referencedColumns: ["board_id"]
+          },
+          {
+            foreignKeyName: "columns_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
             referencedRelation: "boards"
             referencedColumns: ["id"]
           },
         ]
+      }
+      multas_monitoradas: {
+        Row: {
+          created_at: string | null
+          data_infracao: string | null
+          data_vencimento: string | null
+          enviado_1dia: boolean | null
+          enviado_chegada: boolean | null
+          enviado_hoje: boolean | null
+          id_brobot: string
+          placa: string | null
+          renavam: string | null
+          status: string | null
+          updated_at: string | null
+          valor_reais: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_infracao?: string | null
+          data_vencimento?: string | null
+          enviado_1dia?: boolean | null
+          enviado_chegada?: boolean | null
+          enviado_hoje?: boolean | null
+          id_brobot: string
+          placa?: string | null
+          renavam?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valor_reais?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_infracao?: string | null
+          data_vencimento?: string | null
+          enviado_1dia?: boolean | null
+          enviado_chegada?: boolean | null
+          enviado_hoje?: boolean | null
+          id_brobot?: string
+          placa?: string | null
+          renavam?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valor_reais?: number | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -141,6 +289,79 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      task_comments: {
+        Row: {
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          is_public: boolean | null
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_name: string
+          content: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_participants: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string | null
+          task_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          task_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          task_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_participants_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -194,30 +415,62 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          board_id: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          board_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          board_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "board_ai_view"
+            referencedColumns: ["board_id"]
+          },
+          {
+            foreignKeyName: "user_roles_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      board_ai_view: {
+        Row: {
+          board_id: string | null
+          data: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_user_email: { Args: { user_id: string }; Returns: string }
+      get_user_emails: {
+        Args: { user_ids: string[] }
+        Returns: {
+          email: string
+          id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -226,6 +479,7 @@ export type Database = {
         Returns: boolean
       }
       is_user_active: { Args: { _user_id: string }; Returns: boolean }
+      sync_multas: { Args: { items: Json }; Returns: number }
     }
     Enums: {
       app_role: "user" | "admin"
