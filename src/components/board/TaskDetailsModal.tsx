@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, User, X, Edit, Save, Cancel } from "lucide-react";
+import { Calendar, User, X, Edit, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notificationService } from "@/services/notificationService";
@@ -95,25 +95,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
 
     if (!error && data) {
       console.log("✅ Perfis carregados:", data.length, "perfis encontrados");
-      
-      // Buscar emails dos usuários separadamente
-      const userIds = data.map((profile: any) => profile.id);
-      const { data: usersData, error: usersError } = await supabase
-        .rpc("get_user_emails", { user_ids: userIds });
-
-      if (usersError) {
-        console.error("Erro ao buscar emails dos usuários:", usersError);
-      }
-
-      // Mapear os dados para incluir o email
-      const profilesWithEmail = data.map((profile: any) => {
-        const user = usersData?.find((user: any) => user.id === profile.id);
-        return {
-          ...profile,
-          email: user?.email || null
-        };
-      });
-      setProfiles(profilesWithEmail);
+      setProfiles(data);
     } else {
       console.log("❌ Erro ao carregar perfis ou nenhum dado retornado");
     }
@@ -151,35 +133,22 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       `)
       .in("id", userIds);
 
-    // Buscar emails dos usuários separadamente
-    const { data: usersData, error: usersError } = await supabase
-      .rpc("get_user_emails", { user_ids: userIds });
-
     if (profilesError || !profilesData) {
       console.error("Erro ao buscar perfis:", profilesError);
       setParticipants([]);
       return;
     }
 
-    if (usersError) {
-      console.error("Erro ao buscar usuários:", usersError);
-    }
-
     // Combinar os dados
     const participantsWithProfiles = participantsData.map((p: any) => {
       const profile = profilesData.find((profile: any) => profile.id === p.user_id);
-      const user = usersData?.find((user: any) => user.id === p.user_id);
       return {
         ...p,
-        user: profile ? {
-          ...profile,
-          email: user?.email || null
-        } : {
+        user: profile || {
           id: p.user_id,
           nome: "Usuário",
           foto_perfil: null,
-          telefone: "",
-          email: null
+          telefone: ""
         }
       };
     });

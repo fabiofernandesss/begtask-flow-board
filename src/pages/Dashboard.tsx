@@ -121,7 +121,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-foreground mb-2">Meus Blocos</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-2">Todos Blocos</h2>
               <p className="text-muted-foreground">
                 Organize suas tarefas em blocos kanban
               </p>
