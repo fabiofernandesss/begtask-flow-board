@@ -79,29 +79,57 @@ const Admin = () => {
 
   const toggleUserRole = async (userId: string, currentRole: "admin" | "user" | "moderator" | null) => {
     try {
+      console.log("Toggling role for user:", userId, "Current role:", currentRole);
       const newRole = currentRole === "admin" ? "user" : "admin";
       
       if (currentRole) {
         // Update existing role
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("user_roles")
           .update({ role: newRole })
-          .eq("user_id", userId);
+          .eq("user_id", userId)
+          .select();
 
+        console.log("Update result:", { data, error });
         if (error) throw error;
       } else {
         // Insert new role
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("user_roles")
-          .insert({ user_id: userId, role: newRole });
+          .insert({ user_id: userId, role: newRole })
+          .select();
 
+        console.log("Insert result:", { data, error });
         if (error) throw error;
       }
 
       toast.success(`Usuário atualizado para ${newRole}`);
       fetchUsers();
     } catch (error: any) {
+      console.error("Error toggling role:", error);
       toast.error("Erro ao atualizar role: " + error.message);
+    }
+  };
+
+  const toggleUserStatus = async (userId: string, currentStatus: string) => {
+    try {
+      console.log("Toggling status for user:", userId, "Current status:", currentStatus);
+      const newStatus = currentStatus === "ativo" ? "aguardando" : "ativo";
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ status: newStatus })
+        .eq("id", userId)
+        .select();
+
+      console.log("Update status result:", { data, error });
+      if (error) throw error;
+
+      toast.success(`Status atualizado para ${newStatus}`);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error toggling status:", error);
+      toast.error("Erro ao atualizar status: " + error.message);
     }
   };
 
@@ -190,7 +218,11 @@ const Admin = () => {
                         <TableCell className="font-medium">{profile.nome}</TableCell>
                         <TableCell>{profile.telefone}</TableCell>
                         <TableCell>
-                          <Badge variant={profile.status === "ativo" ? "default" : "secondary"}>
+                          <Badge 
+                            variant={profile.status === "ativo" ? "default" : "secondary"}
+                            className="cursor-pointer"
+                            onClick={() => toggleUserStatus(profile.id, profile.status)}
+                          >
                             {profile.status}
                           </Badge>
                         </TableCell>
