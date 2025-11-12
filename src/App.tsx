@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Board from "./pages/Board";
 import PublicBoard from "./pages/PublicBoard";
 import ResetPassword from "./pages/ResetPassword";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/board/:id" element={<Board />} />
         <Route path="/public/board/:id" element={<PublicBoard />} />
+        <Route path="/admin" element={<Admin />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
