@@ -39,13 +39,48 @@ const Dashboard = () => {
 
   const fetchBoards = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      // Buscar boards onde o usuário é owner ou participa de tarefas
       const { data, error } = await supabase
-        .from("boards")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from('boards')
+        .select(`
+          *,
+          columns (
+            id,
+            tasks (
+              id,
+              responsavel_id,
+              task_participants (
+                user_id
+              )
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBoards(data || []);
+      
+      // Filtrar boards onde o usuário é owner ou participa de pelo menos uma tarefa
+      const filteredBoards = (data || []).filter(board => {
+        // Se é owner, mostra
+        if (board.owner_id === user.id) return true;
+        
+        // Se participa de alguma tarefa, mostra
+        return board.columns?.some((column: any) => 
+          column.tasks?.some((task: any) => 
+            task.responsavel_id === user.id ||
+            task.task_participants?.some((p: any) => p.user_id === user.id)
+          )
+        );
+      });
+
+      setBoards(filteredBoards);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar blocos",

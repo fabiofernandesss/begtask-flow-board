@@ -44,6 +44,9 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
         ? existingTasks[0].posicao + 1 
         : 0;
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { error } = await supabase.from("tasks").insert({
         column_id: columnId,
         titulo: titulo.trim(),
@@ -51,6 +54,7 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
         prioridade,
         data_entrega: dataEntrega || null,
         posicao: nextPosition,
+        created_by: user.id
       });
 
       if (error) throw error;
@@ -111,6 +115,7 @@ const CreateTaskDialog = ({ open, onOpenChange, columnId, onTaskCreated }: Creat
           descricao: taskData.descricao || null,
           prioridade: taskData.prioridade || "media",
           posicao: nextPosition++,
+          created_by: session.user.id
         });
       }
 
