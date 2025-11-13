@@ -51,10 +51,14 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
         ? existingColumns[0].posicao + 1 
         : 0;
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { error } = await supabase.from("columns").insert({
         board_id: boardId,
         titulo: titulo.trim(),
         posicao: nextPosition,
+        created_by: user.id
       });
 
       if (error) throw error;
@@ -179,6 +183,7 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
             titulo: col.titulo,
             posicao: nextPosition++,
             cor: color,
+            created_by: session.user.id
           })
           .select()
           .single();
@@ -204,6 +209,7 @@ const CreateColumnDialog = ({ open, onOpenChange, boardId, onColumnCreated }: Cr
           descricao: task.descricao || null,
           prioridade: task.prioridade || 'media',
           posicao: idx,
+          created_by: session.user.id
         }));
 
         if (tasksToInsert.length > 0) {
