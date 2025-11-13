@@ -71,9 +71,9 @@ const TaskCard = ({ task, index, onDelete, onClick, teamMembers = [], taskPartic
             </div>
             
             <div className="flex-1 cursor-pointer" onClick={() => onClick(task)}>
-              <h4 className="font-medium text-sm text-foreground mb-1">{task.titulo}</h4>
+              <h4 className="font-medium text-sm text-foreground mb-1 break-words line-clamp-2">{task.titulo}</h4>
               {task.descricao && (
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                <p className="text-xs text-muted-foreground mb-2 break-words line-clamp-2">
                   {task.descricao}
                 </p>
               )}

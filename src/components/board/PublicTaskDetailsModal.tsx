@@ -140,7 +140,7 @@ const PublicTaskDetailsModal = ({ task, open, onOpenChange }: PublicTaskDetailsM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">{task.titulo}</DialogTitle>
+          <DialogTitle className="text-xl break-words pr-8">{task.titulo}</DialogTitle>
           <DialogDescription>
             Detalhes da tarefa - Visualização pública
           </DialogDescription>
@@ -165,7 +165,7 @@ const PublicTaskDetailsModal = ({ task, open, onOpenChange }: PublicTaskDetailsM
           <div>
             <Label className="text-base mb-2 block">Descrição</Label>
             <div className="bg-muted/30 rounded-lg p-4 min-h-[100px]">
-              <p className="text-sm text-foreground whitespace-pre-wrap">
+              <p className="text-sm text-foreground whitespace-pre-wrap break-words">
                 {task.descricao || "Sem descrição"}
               </p>
             </div>

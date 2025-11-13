@@ -325,8 +325,8 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl">
+            <div className="flex-1">
+              <DialogTitle className="text-xl break-words pr-8">
                 {isEditing ? "Editando Tarefa" : task.titulo}
               </DialogTitle>
               <DialogDescription>
@@ -437,7 +437,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
               />
             ) : (
               <div className="bg-muted/30 rounded-lg p-4 min-h-[100px]">
-                <p className="text-sm text-foreground whitespace-pre-wrap">
+                <p className="text-sm text-foreground whitespace-pre-wrap break-words">
                   {task.descricao || "Sem descrição"}
                 </p>
               </div>

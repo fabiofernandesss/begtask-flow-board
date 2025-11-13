@@ -46,33 +46,64 @@ const Dashboard = () => {
         return;
       }
 
-      // Buscar todos os boards
-      const { data: allBoards, error: boardsError } = await supabase
+      // Buscar todos os boards do usuário (como owner)
+      const { data: ownedBoards, error: ownedError } = await supabase
         .from('boards')
         .select('*')
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (boardsError) throw boardsError;
+      if (ownedError) throw ownedError;
 
-      // Buscar tarefas onde o usuário participa (como responsável ou participante)
-      const { data: userTasks, error: tasksError } = await supabase
+      // Buscar tarefas onde o usuário é responsável
+      const { data: tasksAsResponsavel, error: tasksError } = await supabase
         .from('tasks')
-        .select('column_id, columns(board_id)')
-        .or(`responsavel_id.eq.${user.id},task_participants.user_id.eq.${user.id}`);
+        .select('column_id, columns!inner(board_id)')
+        .eq('responsavel_id', user.id);
 
       if (tasksError) throw tasksError;
 
-      // Extrair board_ids das tarefas do usuário
-      const boardIdsFromTasks = new Set(
-        userTasks?.map((task: any) => task.columns?.board_id).filter(Boolean) || []
+      // Buscar tarefas onde o usuário é participante
+      const { data: tasksAsParticipant, error: participantError } = await supabase
+        .from('task_participants')
+        .select('task_id, tasks!inner(column_id, columns!inner(board_id))')
+        .eq('user_id', user.id);
+
+      if (participantError) throw participantError;
+
+      // Extrair board_ids únicos das tarefas
+      const boardIdsFromResponsavel = new Set(
+        tasksAsResponsavel?.map((t: any) => t.columns?.board_id).filter(Boolean) || []
+      );
+      
+      const boardIdsFromParticipant = new Set(
+        tasksAsParticipant?.map((tp: any) => tp.tasks?.columns?.board_id).filter(Boolean) || []
       );
 
-      // Filtrar boards onde o usuário é owner ou participa de tarefas
-      const filteredBoards = (allBoards || []).filter(board => 
-        board.owner_id === user.id || boardIdsFromTasks.has(board.id)
-      );
+      const allBoardIds = new Set([
+        ...boardIdsFromResponsavel,
+        ...boardIdsFromParticipant
+      ]);
 
-      setBoards(filteredBoards);
+      // Se houver boards de tarefas, buscar esses boards
+      let participantBoards: any[] = [];
+      if (allBoardIds.size > 0) {
+        const { data: pBoards, error: pBoardsError } = await supabase
+          .from('boards')
+          .select('*')
+          .in('id', Array.from(allBoardIds));
+
+        if (pBoardsError) throw pBoardsError;
+        participantBoards = pBoards || [];
+      }
+
+      // Combinar e remover duplicatas
+      const allBoards = [...(ownedBoards || []), ...participantBoards];
+      const uniqueBoards = Array.from(
+        new Map(allBoards.map(board => [board.id, board])).values()
+      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setBoards(uniqueBoards);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar blocos",
