@@ -46,39 +46,31 @@ const Dashboard = () => {
         return;
       }
 
-      // Buscar boards onde o usuário é owner ou participa de tarefas
-      const { data, error } = await supabase
+      // Buscar todos os boards
+      const { data: allBoards, error: boardsError } = await supabase
         .from('boards')
-        .select(`
-          *,
-          columns (
-            id,
-            tasks (
-              id,
-              responsavel_id,
-              task_participants (
-                user_id
-              )
-            )
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Filtrar boards onde o usuário é owner ou participa de pelo menos uma tarefa
-      const filteredBoards = (data || []).filter(board => {
-        // Se é owner, mostra
-        if (board.owner_id === user.id) return true;
-        
-        // Se participa de alguma tarefa, mostra
-        return board.columns?.some((column: any) => 
-          column.tasks?.some((task: any) => 
-            task.responsavel_id === user.id ||
-            task.task_participants?.some((p: any) => p.user_id === user.id)
-          )
-        );
-      });
+      if (boardsError) throw boardsError;
+
+      // Buscar tarefas onde o usuário participa (como responsável ou participante)
+      const { data: userTasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('column_id, columns(board_id)')
+        .or(`responsavel_id.eq.${user.id},task_participants.user_id.eq.${user.id}`);
+
+      if (tasksError) throw tasksError;
+
+      // Extrair board_ids das tarefas do usuário
+      const boardIdsFromTasks = new Set(
+        userTasks?.map((task: any) => task.columns?.board_id).filter(Boolean) || []
+      );
+
+      // Filtrar boards onde o usuário é owner ou participa de tarefas
+      const filteredBoards = (allBoards || []).filter(board => 
+        board.owner_id === user.id || boardIdsFromTasks.has(board.id)
+      );
 
       setBoards(filteredBoards);
     } catch (error: any) {
