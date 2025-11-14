@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Shield, User } from "lucide-react";
+import { ArrowLeft, Shield, User, Eye, Edit } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const ADMIN_PASSWORD = "backtest123";
@@ -22,7 +22,7 @@ type Profile = {
 type UserRole = {
   id: string;
   user_id: string;
-  role: "admin" | "user" | "moderator";
+  role: "admin" | "editor" | "visualizador";
 };
 
 const Admin = () => {
@@ -69,7 +69,11 @@ const Admin = () => {
       if (rolesError) throw rolesError;
 
       setProfiles(profilesData || []);
-      setUserRoles(rolesData || []);
+      // Filtrar apenas as roles válidas
+      const validRoles = (rolesData || []).filter(
+        (r: any) => r.role === "admin" || r.role === "editor" || r.role === "visualizador"
+      ) as UserRole[];
+      setUserRoles(validRoles);
     } catch (error: any) {
       toast.error("Erro ao carregar usuários: " + error.message);
     } finally {
@@ -77,10 +81,19 @@ const Admin = () => {
     }
   };
 
-  const toggleUserRole = async (userId: string, currentRole: "admin" | "user" | "moderator" | null) => {
+  const toggleUserRole = async (userId: string, currentRole: "admin" | "editor" | "visualizador" | null) => {
     try {
       console.log("Toggling role for user:", userId, "Current role:", currentRole);
-      const newRole = currentRole === "admin" ? "user" : "admin";
+      
+      // Ciclo: null -> visualizador -> editor -> admin -> visualizador
+      let newRole: "admin" | "editor" | "visualizador";
+      if (!currentRole || currentRole === "admin") {
+        newRole = "visualizador";
+      } else if (currentRole === "visualizador") {
+        newRole = "editor";
+      } else {
+        newRole = "admin";
+      }
       
       if (currentRole) {
         // Update existing role
@@ -133,9 +146,23 @@ const Admin = () => {
     }
   };
 
-  const getUserRole = (userId: string): "admin" | "user" | "moderator" | null => {
+  const getUserRole = (userId: string): "admin" | "editor" | "visualizador" | null => {
     const role = userRoles.find((r) => r.user_id === userId);
     return role ? role.role : null;
+  };
+
+  const getRoleBadgeVariant = (role: "admin" | "editor" | "visualizador" | null) => {
+    if (role === "admin") return "destructive";
+    if (role === "editor") return "default";
+    if (role === "visualizador") return "secondary";
+    return "outline";
+  };
+
+  const getRoleLabel = (role: "admin" | "editor" | "visualizador" | null) => {
+    if (role === "admin") return "Admin";
+    if (role === "editor") return "Editor";
+    if (role === "visualizador") return "Visualizador";
+    return "Sem Role";
   };
 
   if (!isAuthenticated) {
@@ -193,7 +220,7 @@ const Admin = () => {
               Gerenciamento de Usuários
             </CardTitle>
             <CardDescription>
-              Defina quem é admin e quem é usuário normal
+              Clique na role para alternar: Visualizador → Editor → Admin → Visualizador
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -227,16 +254,30 @@ const Admin = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={role === "admin" ? "destructive" : "outline"}>
+                          <Badge 
+                            variant={getRoleBadgeVariant(role)}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => toggleUserRole(profile.id, role)}
+                          >
                             {role === "admin" ? (
                               <>
                                 <Shield className="w-3 h-3 mr-1" />
                                 Admin
                               </>
+                            ) : role === "editor" ? (
+                              <>
+                                <Edit className="w-3 h-3 mr-1" />
+                                Editor
+                              </>
+                            ) : role === "visualizador" ? (
+                              <>
+                                <Eye className="w-3 h-3 mr-1" />
+                                Visualizador
+                              </>
                             ) : (
                               <>
                                 <User className="w-3 h-3 mr-1" />
-                                {role || "Usuário"}
+                                Sem Role
                               </>
                             )}
                           </Badge>
@@ -244,10 +285,10 @@ const Admin = () => {
                         <TableCell>
                           <Button
                             size="sm"
-                            variant={role === "admin" ? "outline" : "default"}
-                            onClick={() => toggleUserRole(profile.id, role)}
+                            variant="outline"
+                            onClick={() => toggleUserStatus(profile.id, profile.status)}
                           >
-                            {role === "admin" ? "Tornar Usuário" : "Tornar Admin"}
+                            {profile.status === "ativo" ? "Desativar" : "Ativar"}
                           </Button>
                         </TableCell>
                       </TableRow>
