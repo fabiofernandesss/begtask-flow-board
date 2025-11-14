@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Shield, User, Eye, Edit } from "lucide-react";
+import { ArrowLeft, Shield, User, Eye, Edit, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const ADMIN_PASSWORD = "backtest123";
@@ -31,6 +32,7 @@ const Admin = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("admin_auth");
@@ -81,45 +83,45 @@ const Admin = () => {
     }
   };
 
-  const toggleUserRole = async (userId: string, currentRole: "admin" | "editor" | "visualizador" | null) => {
+  const updateUserRole = async (userId: string, newRole: "admin" | "editor" | "visualizador" | "sem_role") => {
     try {
-      console.log("Toggling role for user:", userId, "Current role:", currentRole);
+      console.log("Updating role for user:", userId, "New role:", newRole);
       
-      // Ciclo: null -> visualizador -> editor -> admin -> visualizador
-      let newRole: "admin" | "editor" | "visualizador";
-      if (!currentRole || currentRole === "admin") {
-        newRole = "visualizador";
-      } else if (currentRole === "visualizador") {
-        newRole = "editor";
+      // Se for "sem_role", deletar a role existente
+      if (newRole === "sem_role") {
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId);
+        
+        if (error) throw error;
+        toast.success("Role removida com sucesso");
       } else {
-        newRole = "admin";
+        const currentRole = getUserRole(userId);
+        
+        if (currentRole) {
+          // Update existing role
+          const { error } = await supabase
+            .from("user_roles")
+            .update({ role: newRole })
+            .eq("user_id", userId);
+
+          if (error) throw error;
+        } else {
+          // Insert new role
+          const { error } = await supabase
+            .from("user_roles")
+            .insert({ user_id: userId, role: newRole });
+
+          if (error) throw error;
+        }
+        
+        toast.success(`Usuário atualizado para ${newRole}`);
       }
       
-      if (currentRole) {
-        // Update existing role
-        const { data, error } = await supabase
-          .from("user_roles")
-          .update({ role: newRole })
-          .eq("user_id", userId)
-          .select();
-
-        console.log("Update result:", { data, error });
-        if (error) throw error;
-      } else {
-        // Insert new role
-        const { data, error } = await supabase
-          .from("user_roles")
-          .insert({ user_id: userId, role: newRole })
-          .select();
-
-        console.log("Insert result:", { data, error });
-        if (error) throw error;
-      }
-
-      toast.success(`Usuário atualizado para ${newRole}`);
       fetchUsers();
     } catch (error: any) {
-      console.error("Error toggling role:", error);
+      console.error("Error updating role:", error);
       toast.error("Erro ao atualizar role: " + error.message);
     }
   };
@@ -164,6 +166,14 @@ const Admin = () => {
     if (role === "visualizador") return "Visualizador";
     return "Sem Role";
   };
+
+  const filteredProfiles = profiles.filter((profile) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      profile.nome.toLowerCase().includes(search) ||
+      profile.telefone.toLowerCase().includes(search)
+    );
+  });
 
   if (!isAuthenticated) {
     return (
@@ -220,10 +230,21 @@ const Admin = () => {
               Gerenciamento de Usuários
             </CardTitle>
             <CardDescription>
-              Clique na role para alternar: Visualizador → Editor → Admin → Visualizador
+              Selecione a role de cada usuário usando o dropdown
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Buscar por nome ou telefone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
             {loading ? (
               <div className="text-center py-8">Carregando...</div>
             ) : (
@@ -238,7 +259,7 @@ const Admin = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {profiles.map((profile) => {
+                  {filteredProfiles.map((profile) => {
                     const role = getUserRole(profile.id);
                     return (
                       <TableRow key={profile.id}>
@@ -254,33 +275,62 @@ const Admin = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={getRoleBadgeVariant(role)}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => toggleUserRole(profile.id, role)}
+                          <Select
+                            value={role || "sem_role"}
+                            onValueChange={(value) => updateUserRole(profile.id, value as "admin" | "editor" | "visualizador" | "sem_role")}
                           >
-                            {role === "admin" ? (
-                              <>
-                                <Shield className="w-3 h-3 mr-1" />
-                                Admin
-                              </>
-                            ) : role === "editor" ? (
-                              <>
-                                <Edit className="w-3 h-3 mr-1" />
-                                Editor
-                              </>
-                            ) : role === "visualizador" ? (
-                              <>
-                                <Eye className="w-3 h-3 mr-1" />
-                                Visualizador
-                              </>
-                            ) : (
-                              <>
-                                <User className="w-3 h-3 mr-1" />
-                                Sem Role
-                              </>
-                            )}
-                          </Badge>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue>
+                                {role === "admin" ? (
+                                  <span className="flex items-center gap-2">
+                                    <Shield className="w-4 h-4" />
+                                    Admin
+                                  </span>
+                                ) : role === "editor" ? (
+                                  <span className="flex items-center gap-2">
+                                    <Edit className="w-4 h-4" />
+                                    Editor
+                                  </span>
+                                ) : role === "visualizador" ? (
+                                  <span className="flex items-center gap-2">
+                                    <Eye className="w-4 h-4" />
+                                    Visualizador
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-2">
+                                    <User className="w-4 h-4" />
+                                    Sem Role
+                                  </span>
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sem_role">
+                                <span className="flex items-center gap-2">
+                                  <User className="w-4 h-4" />
+                                  Sem Role
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="visualizador">
+                                <span className="flex items-center gap-2">
+                                  <Eye className="w-4 h-4" />
+                                  Visualizador
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="editor">
+                                <span className="flex items-center gap-2">
+                                  <Edit className="w-4 h-4" />
+                                  Editor
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="admin">
+                                <span className="flex items-center gap-2">
+                                  <Shield className="w-4 h-4" />
+                                  Admin
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Button
