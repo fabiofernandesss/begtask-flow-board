@@ -175,6 +175,7 @@ export type Database = {
           board_id: string
           cor: string | null
           created_at: string
+          created_by: string | null
           id: string
           posicao: number
           titulo: string
@@ -184,6 +185,7 @@ export type Database = {
           board_id: string
           cor?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           posicao?: number
           titulo: string
@@ -193,6 +195,7 @@ export type Database = {
           board_id?: string
           cor?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           posicao?: number
           titulo?: string
@@ -368,6 +371,7 @@ export type Database = {
           anexos: string[] | null
           column_id: string
           created_at: string
+          created_by: string | null
           data_entrega: string | null
           descricao: string | null
           id: string
@@ -381,6 +385,7 @@ export type Database = {
           anexos?: string[] | null
           column_id: string
           created_at?: string
+          created_by?: string | null
           data_entrega?: string | null
           descricao?: string | null
           id?: string
@@ -394,6 +399,7 @@ export type Database = {
           anexos?: string[] | null
           column_id?: string
           created_at?: string
+          created_by?: string | null
           data_entrega?: string | null
           descricao?: string | null
           id?: string
@@ -478,8 +484,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_public_board_task: { Args: { _task_id: string }; Returns: boolean }
       is_user_active: { Args: { _user_id: string }; Returns: boolean }
       sync_multas: { Args: { items: Json }; Returns: number }
+      user_can_manage_task_participants: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_is_task_participant: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_owns_column_board: {
+        Args: { _column_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "user" | "admin"
