@@ -419,6 +419,59 @@ export type Database = {
           },
         ]
       }
+      user_board_access: {
+        Row: {
+          board_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_board_access_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "board_ai_view"
+            referencedColumns: ["board_id"]
+          },
+          {
+            foreignKeyName: "user_board_access_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_board_access_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_board_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           board_id: string | null
@@ -489,6 +542,10 @@ export type Database = {
       sync_multas: { Args: { items: Json }; Returns: number }
       user_can_manage_task_participants: {
         Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_board_access: {
+        Args: { _board_id: string; _user_id: string }
         Returns: boolean
       }
       user_is_task_participant: {
