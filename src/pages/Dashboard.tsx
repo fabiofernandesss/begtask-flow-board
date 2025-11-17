@@ -55,50 +55,19 @@ const Dashboard = () => {
 
       if (ownedError) throw ownedError;
 
-      // Buscar tarefas onde o usuário é responsável
-      const { data: tasksAsResponsavel, error: tasksError } = await supabase
-        .from('tasks')
-        .select('column_id, columns!inner(board_id)')
-        .eq('responsavel_id', user.id);
-
-      if (tasksError) throw tasksError;
-
-      // Buscar tarefas onde o usuário é participante
-      const { data: tasksAsParticipant, error: participantError } = await supabase
-        .from('task_participants')
-        .select('task_id, tasks!inner(column_id, columns!inner(board_id))')
+      // Buscar boards onde o usuário tem acesso via user_board_access
+      const { data: accessBoards, error: accessError } = await supabase
+        .from('user_board_access')
+        .select('board_id, boards!inner(*)')
         .eq('user_id', user.id);
 
-      if (participantError) throw participantError;
+      if (accessError) throw accessError;
 
-      // Extrair board_ids únicos das tarefas
-      const boardIdsFromResponsavel = new Set(
-        tasksAsResponsavel?.map((t: any) => t.columns?.board_id).filter(Boolean) || []
-      );
-      
-      const boardIdsFromParticipant = new Set(
-        tasksAsParticipant?.map((tp: any) => tp.tasks?.columns?.board_id).filter(Boolean) || []
-      );
-
-      const allBoardIds = new Set([
-        ...boardIdsFromResponsavel,
-        ...boardIdsFromParticipant
-      ]);
-
-      // Se houver boards de tarefas, buscar esses boards
-      let participantBoards: any[] = [];
-      if (allBoardIds.size > 0) {
-        const { data: pBoards, error: pBoardsError } = await supabase
-          .from('boards')
-          .select('*')
-          .in('id', Array.from(allBoardIds));
-
-        if (pBoardsError) throw pBoardsError;
-        participantBoards = pBoards || [];
-      }
+      // Extrair os boards da relação
+      const boardsWithAccess = accessBoards?.map((access: any) => access.boards) || [];
 
       // Combinar e remover duplicatas
-      const allBoards = [...(ownedBoards || []), ...participantBoards];
+      const allBoards = [...(ownedBoards || []), ...boardsWithAccess];
       const uniqueBoards = Array.from(
         new Map(allBoards.map(board => [board.id, board])).values()
       ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Shield, User, Eye, Edit, Search } from "lucide-react";
+import { ArrowLeft, Shield, User, Eye, Edit, Search, Blocks } from "lucide-react";
 import { Link } from "react-router-dom";
+import ManageBoardAccessDialog from "@/components/dashboard/ManageBoardAccessDialog";
 
 const ADMIN_PASSWORD = "backtest123";
 
@@ -33,6 +34,8 @@ const Admin = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
+  const [manageBoardsOpen, setManageBoardsOpen] = useState(false);
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("admin_auth");
@@ -333,13 +336,26 @@ const Admin = () => {
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => toggleUserStatus(profile.id, profile.status)}
-                          >
-                            {profile.status === "ativo" ? "Desativar" : "Ativar"}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => toggleUserStatus(profile.id, profile.status)}
+                            >
+                              {profile.status === "ativo" ? "Desativar" : "Ativar"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedUser({ id: profile.id, name: profile.nome });
+                                setManageBoardsOpen(true);
+                              }}
+                            >
+                              <Blocks className="w-4 h-4 mr-2" />
+                              Blocos
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -350,6 +366,15 @@ const Admin = () => {
           </CardContent>
         </Card>
       </div>
+
+      {selectedUser && (
+        <ManageBoardAccessDialog
+          open={manageBoardsOpen}
+          onOpenChange={setManageBoardsOpen}
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+        />
+      )}
     </div>
   );
 };
