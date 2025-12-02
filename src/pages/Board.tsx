@@ -337,86 +337,119 @@ const Board = () => {
             await supabase.from("tasks").update({ posicao: task.posicao }).eq("id", task.id);
           }
 
-          // Enviar notificação WhatsApp se a tarefa tem responsável
-          if (movedTask.responsavel_id) {
-            console.log("🔄 Iniciando envio de notificação para tarefa:", movedTask.titulo);
-            console.log("📋 Responsável ID:", movedTask.responsavel_id);
-            console.log("📍 De:", sourceCol.titulo, "Para:", destCol.titulo);
+          // Enviar notificação para responsável e participantes da tarefa
+          try {
+            console.log("🔄 Iniciando envio de notificações para tarefa:", movedTask.titulo);
             
-            try {
-              // Verificar sessão antes de enviar notificação
-              const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-              console.log("🔐 Verificação de sessão:", session ? "✅ Autenticado" : "❌ Não autenticado");
-              
-              if (sessionError) {
-                console.error("❌ Erro na sessão:", sessionError);
-                throw new Error(`Erro de autenticação: ${sessionError.message}`);
-              }
-              
-              if (!session) {
-                console.error("❌ Usuário não autenticado");
-                throw new Error("Usuário não autenticado");
-              }
-
-              const { data: profileData, error: profileError } = await supabase
-                .from("profiles")
-                .select("nome, telefone")
-                .eq("id", movedTask.responsavel_id)
-                .single();
-
-              if (profileError) {
-                console.error("❌ Erro ao buscar perfil:", profileError);
-                throw profileError;
-              }
-
-              console.log("👤 Dados do perfil:", profileData);
-
-              const { data: userEmail, error: emailError } = await supabase
-                .rpc('get_user_email' as any, { user_id: movedTask.responsavel_id });
-
-              if (emailError) {
-                console.error("❌ Erro ao buscar email:", emailError);
-                throw emailError;
-              }
-
-              console.log("📧 Email do usuário:", userEmail);
-
-              if (profileData && (profileData.telefone || userEmail)) {
-                console.log("📤 Enviando notificação...");
-                
-                const notificationResult = await notificationService.sendTaskMovedNotification(
-                  profileData.nome,
-                  profileData.telefone,
-                  String(userEmail || ''),
-                  movedTask.titulo,
-                  sourceCol.titulo,
-                  destCol.titulo
-                );
-                
-                console.log("✅ Notificação enviada com sucesso:", notificationResult);
-                
-                // Mostrar toast de sucesso
-                toast({
-                  title: "Notificação enviada",
-                  description: `Notificação enviada para ${profileData.nome}`,
-                });
-              } else {
-                console.log("⚠️ Sem dados de contato para enviar notificação");
-              }
-            } catch (whatsappError: any) {
-              console.error("❌ Erro ao enviar notificação:", whatsappError);
-              
-              // Mostrar toast de erro para o usuário
-              toast({
-                title: "Erro ao enviar notificação",
-                description: whatsappError.message || "Erro desconhecido",
-                variant: "destructive",
-              });
-              
-              // Não falha a operação principal se o WhatsApp falhar
+            // Verificar sessão antes de enviar notificação
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            console.log("🔐 Verificação de sessão:", session ? "✅ Autenticado" : "❌ Não autenticado");
+            
+            if (sessionError) {
+              console.error("❌ Erro na sessão:", sessionError);
+              throw new Error(`Erro de autenticação: ${sessionError.message}`);
             }
-          } else {
-            console.log("⚠️ Tarefa sem responsável, não enviando notificação");
+            
+            if (!session) {
+              console.error("❌ Usuário não autenticado");
+              throw new Error("Usuário não autenticado");
+            }
+
+            // Coletar todos os user_ids para notificar (responsável + participantes)
+            const userIdsToNotify = new Set<string>();
+            
+            // Adicionar responsável se existir
+            if (movedTask.responsavel_id) {
+              userIdsToNotify.add(movedTask.responsavel_id);
+              console.log("📋 Responsável ID:", movedTask.responsavel_id);
+            }
+            
+            // Buscar participantes da tarefa
+            const { data: participantsData, error: participantsError } = await supabase
+              .from("task_participants")
+              .select("user_id")
+              .eq("task_id", movedTask.id);
+            
+            if (!participantsError && participantsData) {
+              participantsData.forEach((p: any) => {
+                userIdsToNotify.add(p.user_id);
+              });
+              console.log("👥 Participantes encontrados:", participantsData.length);
+            } else if (participantsError) {
+              console.warn("⚠️ Erro ao buscar participantes:", participantsError);
+            }
+
+            console.log("📍 De:", sourceCol.titulo, "Para:", destCol.titulo);
+            console.log("👥 Total de usuários para notificar:", userIdsToNotify.size);
+
+            if (userIdsToNotify.size === 0) {
+              console.log("⚠️ Tarefa sem responsável e sem participantes, não enviando notificação");
+            } else {
+              // Buscar perfis de todos os usuários
+              const userIds = Array.from(userIdsToNotify);
+              const { data: profilesData, error: profilesError } = await supabase
+                .from("profiles")
+                .select("id, nome, telefone")
+                .in("id", userIds);
+
+              if (profilesError) {
+                console.error("❌ Erro ao buscar perfis:", profilesError);
+                throw profilesError;
+              }
+
+              // Buscar emails de todos os usuários
+              const { data: emailsData, error: emailsError } = await supabase
+                .rpc('get_user_emails', { user_ids: userIds });
+
+              if (emailsError) {
+                console.warn("⚠️ Erro ao buscar emails:", emailsError);
+              }
+
+              console.log("👤 Perfis encontrados:", profilesData?.length || 0);
+              console.log("📧 Emails encontrados:", emailsData?.length || 0);
+
+              // Enviar notificação para cada usuário
+              let notificationsSent = 0;
+              for (const profile of (profilesData || [])) {
+                const userEmail = emailsData?.find((e: any) => e.id === profile.id)?.email;
+                
+                if (profile.telefone || userEmail) {
+                  console.log(`📤 Enviando notificação para ${profile.nome}...`);
+                  
+                  await notificationService.sendTaskMovedNotification(
+                    profile.nome,
+                    profile.telefone,
+                    String(userEmail || ''),
+                    movedTask.titulo,
+                    sourceCol.titulo,
+                    destCol.titulo
+                  );
+                  
+                  notificationsSent++;
+                  console.log(`✅ Notificação enviada para ${profile.nome}`);
+                } else {
+                  console.log(`⚠️ ${profile.nome} sem dados de contato`);
+                }
+              }
+
+              if (notificationsSent > 0) {
+                toast({
+                  title: "Notificações enviadas",
+                  description: `${notificationsSent} notificação(ões) enviada(s)`,
+                });
+              }
+            }
+          } catch (whatsappError: any) {
+            console.error("❌ Erro ao enviar notificação:", whatsappError);
+            
+            // Mostrar toast de erro para o usuário
+            toast({
+              title: "Erro ao enviar notificação",
+              description: whatsappError.message || "Erro desconhecido",
+              variant: "destructive",
+            });
+            
+            // Não falha a operação principal se a notificação falhar
           }
         } catch (error: any) {
           toast({
