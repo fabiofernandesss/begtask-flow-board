@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, User, X, Edit, Save } from "lucide-react";
+import { Calendar, User, X, Edit, Save, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notificationService } from "@/services/notificationService";
 import { useParams } from "react-router-dom";
+import TaskImageUpload from "./TaskImageUpload";
 
 interface Task {
   id: string;
@@ -19,6 +20,16 @@ interface Task {
   descricao: string | null;
   prioridade: "baixa" | "media" | "alta";
   data_entrega: string | null;
+  image_url_1?: string | null;
+  image_url_2?: string | null;
+  image_url_3?: string | null;
+  image_url_4?: string | null;
+  image_url_5?: string | null;
+  image_url_6?: string | null;
+  image_url_7?: string | null;
+  image_url_8?: string | null;
+  image_url_9?: string | null;
+  image_url_10?: string | null;
 }
 
 interface Profile {
@@ -278,6 +289,16 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
           descricao: editedTask.descricao,
           prioridade: editedTask.prioridade,
           data_entrega: editedTask.data_entrega,
+          image_url_1: editedTask.image_url_1,
+          image_url_2: editedTask.image_url_2,
+          image_url_3: editedTask.image_url_3,
+          image_url_4: editedTask.image_url_4,
+          image_url_5: editedTask.image_url_5,
+          image_url_6: editedTask.image_url_6,
+          image_url_7: editedTask.image_url_7,
+          image_url_8: editedTask.image_url_8,
+          image_url_9: editedTask.image_url_9,
+          image_url_10: editedTask.image_url_10,
         })
         .eq("id", task.id);
 
@@ -442,6 +463,50 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Imagens */}
+          <div>
+            <Label className="text-base mb-2 flex items-center gap-2">
+              <Image className="w-4 h-4" />
+              Imagens ({[
+                editedTask?.image_url_1, editedTask?.image_url_2, editedTask?.image_url_3,
+                editedTask?.image_url_4, editedTask?.image_url_5, editedTask?.image_url_6,
+                editedTask?.image_url_7, editedTask?.image_url_8, editedTask?.image_url_9,
+                editedTask?.image_url_10
+              ].filter(Boolean).length}/10)
+            </Label>
+            <TaskImageUpload
+              taskId={task.id}
+              imageUrls={[
+                editedTask?.image_url_1 || null,
+                editedTask?.image_url_2 || null,
+                editedTask?.image_url_3 || null,
+                editedTask?.image_url_4 || null,
+                editedTask?.image_url_5 || null,
+                editedTask?.image_url_6 || null,
+                editedTask?.image_url_7 || null,
+                editedTask?.image_url_8 || null,
+                editedTask?.image_url_9 || null,
+                editedTask?.image_url_10 || null,
+              ]}
+              onImagesUpdate={(urls) => {
+                setEditedTask(prev => prev ? {
+                  ...prev,
+                  image_url_1: urls[0],
+                  image_url_2: urls[1],
+                  image_url_3: urls[2],
+                  image_url_4: urls[3],
+                  image_url_5: urls[4],
+                  image_url_6: urls[5],
+                  image_url_7: urls[6],
+                  image_url_8: urls[7],
+                  image_url_9: urls[8],
+                  image_url_10: urls[9],
+                } : null);
+              }}
+              isEditing={isEditing}
+            />
           </div>
 
           {/* Participantes */}
