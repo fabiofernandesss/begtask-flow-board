@@ -41,6 +41,16 @@ interface Task {
   data_entrega: string | null;
   anexos: string[];
   responsavel_id: string | null;
+  image_url_1?: string | null;
+  image_url_2?: string | null;
+  image_url_3?: string | null;
+  image_url_4?: string | null;
+  image_url_5?: string | null;
+  image_url_6?: string | null;
+  image_url_7?: string | null;
+  image_url_8?: string | null;
+  image_url_9?: string | null;
+  image_url_10?: string | null;
 }
 
 interface TeamMember {
