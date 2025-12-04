@@ -9,10 +9,9 @@ interface TaskImageUploadProps {
   taskId: string;
   imageUrls: (string | null)[];
   onImagesUpdate: (urls: (string | null)[]) => void;
-  isEditing: boolean;
 }
 
-const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate, isEditing }: TaskImageUploadProps) => {
+const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate }: TaskImageUploadProps) => {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -131,8 +130,8 @@ const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate, isEditing }: TaskI
   }, []);
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+    <div className="space-y-2">
+      <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-10 gap-1.5">
         {Array.from({ length: 10 }, (_, index) => {
           const imageUrl = imageUrls[index];
           const isUploading = uploadingIndex === index;
@@ -141,14 +140,14 @@ const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate, isEditing }: TaskI
           return (
             <div
               key={index}
-              className={`relative aspect-square rounded-lg border-2 border-dashed transition-all ${
+              className={`relative aspect-square rounded border-2 border-dashed transition-all ${
                 isFocused 
                   ? 'border-primary bg-primary/5' 
                   : imageUrl 
                     ? 'border-border' 
                     : 'border-muted-foreground/25 hover:border-muted-foreground/50'
               }`}
-              onDrop={(e) => isEditing && handleDrop(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
               onDragOver={handleDragOver}
             >
               {imageUrl ? (
@@ -156,24 +155,22 @@ const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate, isEditing }: TaskI
                   <img
                     src={imageUrl}
                     alt={`Imagem ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
+                    className="w-full h-full object-cover rounded"
                     onClick={() => window.open(imageUrl, '_blank')}
                     style={{ cursor: 'pointer' }}
                   />
-                  {isEditing && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                      onClick={() => handleRemoveImage(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full"
+                    onClick={() => handleRemoveImage(index)}
+                  >
+                    <X className="h-2 w-2" />
+                  </Button>
                 </>
-              ) : isEditing ? (
+              ) : (
                 <div
-                  className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-2"
+                  className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-1"
                   onClick={() => fileInputRefs.current[index]?.click()}
                   onPaste={(e) => handlePaste(e, index)}
                   onFocus={() => setFocusedIndex(index)}
@@ -181,20 +178,11 @@ const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate, isEditing }: TaskI
                   tabIndex={0}
                 >
                   {isUploading ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      <span className="text-xs text-muted-foreground">Enviando...</span>
-                    </div>
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                      <ImagePlus className="h-6 w-6" />
-                      <span className="text-[10px] text-center leading-tight">
-                        {index + 1}
-                      </span>
-                      <div className="flex gap-1 mt-1">
-                        <Clipboard className="h-3 w-3" />
-                        <Upload className="h-3 w-3" />
-                      </div>
+                    <div className="flex flex-col items-center text-muted-foreground">
+                      <ImagePlus className="h-4 w-4" />
+                      <span className="text-[8px]">{index + 1}</span>
                     </div>
                   )}
                   <Input
@@ -206,21 +194,15 @@ const TaskImageUpload = ({ taskId, imageUrls, onImagesUpdate, isEditing }: TaskI
                     onPaste={(e) => handlePaste(e, index)}
                   />
                 </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-xs text-muted-foreground">{index + 1}</span>
-                </div>
               )}
             </div>
           );
         })}
       </div>
       
-      {isEditing && (
-        <p className="text-xs text-muted-foreground text-center">
-          Clique para selecionar ou use Ctrl+V para colar imagens. Arraste e solte também funciona.
-        </p>
-      )}
+      <p className="text-[10px] text-muted-foreground text-center">
+        Clique, Ctrl+V ou arraste imagens
+      </p>
     </div>
   );
 };

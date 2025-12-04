@@ -490,9 +490,9 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                 editedTask?.image_url_9 || null,
                 editedTask?.image_url_10 || null,
               ]}
-              onImagesUpdate={(urls) => {
-                setEditedTask(prev => prev ? {
-                  ...prev,
+              onImagesUpdate={async (urls) => {
+                const updatedTask = {
+                  ...editedTask,
                   image_url_1: urls[0],
                   image_url_2: urls[1],
                   image_url_3: urls[2],
@@ -503,9 +503,31 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                   image_url_8: urls[7],
                   image_url_9: urls[8],
                   image_url_10: urls[9],
-                } : null);
+                };
+                setEditedTask(prev => prev ? updatedTask as Task : null);
+                
+                // Auto-save images
+                try {
+                  await supabase
+                    .from("tasks")
+                    .update({
+                      image_url_1: urls[0],
+                      image_url_2: urls[1],
+                      image_url_3: urls[2],
+                      image_url_4: urls[3],
+                      image_url_5: urls[4],
+                      image_url_6: urls[5],
+                      image_url_7: urls[6],
+                      image_url_8: urls[7],
+                      image_url_9: urls[8],
+                      image_url_10: urls[9],
+                    })
+                    .eq("id", task.id);
+                  onUpdate();
+                } catch (error) {
+                  console.error("Erro ao salvar imagens:", error);
+                }
               }}
-              isEditing={isEditing}
             />
           </div>
 
