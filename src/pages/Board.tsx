@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, MessageCircle, Send, Bot, User, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, MessageCircle, Send, Bot, User, RefreshCw, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
@@ -14,6 +14,7 @@ import TaskDetailsModal from "@/components/board/TaskDetailsModal";
 import ListView from "@/components/board/ListView";
 import CommentsSection from "@/components/board/CommentsSection";
 import { AIChat } from "@/components/board/AIChat";
+import WhatsAppBroadcast from "@/components/board/WhatsAppBroadcast";
 import { notificationService } from "@/services/notificationService";
 import ReactMarkdown from "react-markdown";
 
@@ -898,7 +899,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="board" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="board" className="flex items-center gap-2">
               <Kanban className="w-4 h-4" />
               Board
@@ -906,6 +907,10 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
             <TabsTrigger value="comments" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               Comentários
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              WhatsApp
             </TabsTrigger>
           </TabsList>
 
@@ -965,6 +970,13 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
               boardId={id!} 
               isPublic={false}
               className="max-w-4xl mx-auto"
+            />
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="mt-0">
+            <WhatsAppBroadcast 
+              boardId={id!}
+              columns={columns}
             />
           </TabsContent>
         </Tabs>
