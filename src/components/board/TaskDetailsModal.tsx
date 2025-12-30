@@ -7,12 +7,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, User, X, Edit, Save, Image } from "lucide-react";
+import { Calendar, User, X, Edit, Save, Image, MessageSquare, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { notificationService } from "@/services/notificationService";
 import { useParams } from "react-router-dom";
 import TaskImageUpload from "./TaskImageUpload";
+
+interface TaskComment {
+  id: string;
+  task_id: string;
+  author_name: string;
+  content: string;
+  is_public: boolean;
+  created_at: string;
+}
 
 interface Task {
   id: string;
@@ -71,6 +80,12 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   
+  // Estados para comentários
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  
   const { toast } = useToast();
   const { id: boardId } = useParams();
 
@@ -78,14 +93,68 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     if (open && task) {
       fetchProfiles();
       fetchParticipants();
+      fetchComments();
       setEditedTask(task);
       setIsEditing(false);
     } else {
       setParticipants([]);
+      setComments([]);
       setEditedTask(null);
       setIsEditing(false);
+      setNewComment("");
     }
   }, [open, task]);
+
+  const fetchComments = async () => {
+    if (!task) return;
+    
+    const { data, error } = await supabase
+      .from("task_comments" as any)
+      .select("*")
+      .eq("task_id", task.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setComments(data as unknown as TaskComment[]);
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    if (!task || !newComment.trim() || !authorName.trim()) {
+      toast({
+        title: "Preencha todos os campos",
+        description: "Nome e comentário são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      const { error } = await supabase
+        .from("task_comments" as any)
+        .insert({
+          task_id: task.id,
+          author_name: authorName.trim(),
+          content: newComment.trim(),
+          is_public: true,
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Comentário adicionado!" });
+      setNewComment("");
+      fetchComments();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao adicionar comentário",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
 
   const fetchProfiles = async () => {
     console.log("🔍 fetchProfiles chamada com searchTerm:", searchTerm);
@@ -605,6 +674,70 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
               {profiles.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Nenhum usuário encontrado
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Comentários */}
+          <div className="border-t pt-6">
+            <Label className="text-base mb-4 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Comentários ({comments.length})
+            </Label>
+            
+            {/* Formulário de novo comentário */}
+            <div className="space-y-3 mb-4">
+              <Input
+                placeholder="Seu nome"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Escreva um comentário..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <Button
+                  onClick={handleSubmitComment}
+                  disabled={submittingComment || !newComment.trim() || !authorName.trim()}
+                  className="self-end"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Lista de comentários */}
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {comments.map((comment) => (
+                <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Avatar className="w-6 h-6">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {comment.author_name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-sm">{comment.author_name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(comment.created_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{comment.content}</p>
+                </div>
+              ))}
+              
+              {comments.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum comentário ainda
                 </p>
               )}
             </div>
