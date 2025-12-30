@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,11 +83,20 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   // Estados para comentários
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [authorName, setAuthorName] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  
+  // Estado para o usuário atual
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
+  
+  // Ref para scroll aos comentários
+  const commentsRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const { id: boardId } = useParams();
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (open && task) {
@@ -105,6 +114,25 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
     }
   }, [open, task]);
 
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, nome, foto_perfil, telefone")
+        .eq("id", user.id)
+        .single();
+      
+      if (profile) {
+        setCurrentUser(profile);
+      }
+    }
+  };
+
+  const scrollToComments = () => {
+    commentsRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const fetchComments = async () => {
     if (!task) return;
     
@@ -120,10 +148,10 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
   };
 
   const handleSubmitComment = async () => {
-    if (!task || !newComment.trim() || !authorName.trim()) {
+    if (!task || !newComment.trim() || !currentUser) {
       toast({
-        title: "Preencha todos os campos",
-        description: "Nome e comentário são obrigatórios",
+        title: "Erro",
+        description: "Você precisa estar logado para comentar",
         variant: "destructive",
       });
       return;
@@ -135,7 +163,7 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
         .from("task_comments" as any)
         .insert({
           task_id: task.id,
-          author_name: authorName.trim(),
+          author_name: currentUser.nome,
           content: newComment.trim(),
           is_public: true,
         });
@@ -423,7 +451,17 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
                 {isEditing ? "Edite os detalhes desta tarefa" : "Visualize e edite os detalhes desta tarefa"}
               </DialogDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {/* Tag de Comentários */}
+              <Badge 
+                variant="outline" 
+                className="cursor-pointer hover:bg-accent transition-colors flex items-center gap-1"
+                onClick={scrollToComments}
+              >
+                <MessageSquare className="w-3 h-3" />
+                {comments.length}
+              </Badge>
+              
               {!isEditing ? (
                 <Button variant="outline" size="sm" onClick={handleEditTask}>
                   <Edit className="w-4 h-4 mr-2" />
@@ -680,35 +718,39 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
           </div>
 
           {/* Comentários */}
-          <div className="border-t pt-6">
+          <div ref={commentsRef} className="border-t pt-6">
             <Label className="text-base mb-4 flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               Comentários ({comments.length})
             </Label>
             
             {/* Formulário de novo comentário */}
-            <div className="space-y-3 mb-4">
-              <Input
-                placeholder="Seu nome"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Escreva um comentário..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[80px]"
-                />
-                <Button
-                  onClick={handleSubmitComment}
-                  disabled={submittingComment || !newComment.trim() || !authorName.trim()}
-                  className="self-end"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+            {currentUser && (
+              <div className="flex gap-3 mb-4">
+                <Avatar className="w-10 h-10 flex-shrink-0">
+                  <AvatarImage src={currentUser.foto_perfil || undefined} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {currentUser.nome.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 flex gap-2">
+                  <Textarea
+                    placeholder="Escreva um comentário..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="min-h-[60px]"
+                  />
+                  <Button
+                    onClick={handleSubmitComment}
+                    disabled={submittingComment || !newComment.trim()}
+                    className="self-end"
+                    size="icon"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Lista de comentários */}
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
