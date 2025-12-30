@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Draggable, Droppable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, Copy } from "lucide-react";
 import TaskCard from "./TaskCard";
 import CreateTaskDialog from "./CreateTaskDialog";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +62,39 @@ interface ColumnProps {
 
 const Column = ({ column, index, onDelete, onDeleteTask, onTaskClick, onTaskCreated, teamMembers = [], taskParticipants = [] }: ColumnProps) => {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleCopyColumnTexts = () => {
+    if (column.tasks.length === 0) {
+      toast({
+        title: "Nenhuma tarefa na coluna",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const textsArray = column.tasks.map((task, idx) => {
+      let text = `📋 ${task.titulo}`;
+      if (task.descricao) {
+        text += `\n${task.descricao}`;
+      }
+      return text;
+    });
+
+    const fullText = textsArray.join('\n\n---\n\n');
+    
+    navigator.clipboard.writeText(fullText).then(() => {
+      toast({
+        title: "Texto copiado!",
+        description: `${column.tasks.length} tarefa(s) copiada(s)`,
+      });
+    }).catch(() => {
+      toast({
+        title: "Erro ao copiar",
+        variant: "destructive",
+      });
+    });
+  };
 
   return (
     <>
@@ -100,7 +134,7 @@ const Column = ({ column, index, onDelete, onDeleteTask, onTaskClick, onTaskCrea
               </span>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -110,9 +144,19 @@ const Column = ({ column, index, onDelete, onDeleteTask, onTaskClick, onTaskCrea
                 <Plus className="w-4 h-4" />
               </Button>
               
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyColumnTexts}
+                className="h-8 w-8 p-0"
+                title="Copiar textos das tarefas"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </AlertDialogTrigger>
