@@ -17,6 +17,7 @@ import { AIChat } from "@/components/board/AIChat";
 import WhatsAppBroadcast from "@/components/board/WhatsAppBroadcast";
 import { notificationService } from "@/services/notificationService";
 import ReactMarkdown from "react-markdown";
+import logoBEG from "@/assets/logoBEG.png";
 
 interface Board {
   id: string;
@@ -858,8 +859,9 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
               <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
+              <img src={logoBEG} alt="BEG Inovação" className="h-8" />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">{board?.titulo}</h1>
+                <h1 className="text-xl font-bold text-foreground">{board?.titulo}</h1>
                 {board?.descricao && (
                   <p className="text-sm text-muted-foreground">{board.descricao}</p>
                 )}

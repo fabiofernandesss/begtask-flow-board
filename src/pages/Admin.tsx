@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Shield, User, Eye, Edit, Search, Blocks } from "lucide-react";
 import { Link } from "react-router-dom";
 import ManageBoardAccessDialog from "@/components/dashboard/ManageBoardAccessDialog";
+import logoBEG from "@/assets/logoBEG.png";
 
 const ADMIN_PASSWORD = "backtest123";
 
@@ -211,10 +212,13 @@ const Admin = () => {
     <div className="min-h-screen bg-gradient-subtle p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
-          <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-smooth">
-            <ArrowLeft className="w-4 h-4" />
-            Voltar ao Dashboard
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-smooth">
+              <ArrowLeft className="w-4 h-4" />
+              Voltar ao Dashboard
+            </Link>
+            <img src={logoBEG} alt="BEG Inovação" className="h-8" />
+          </div>
           <Button
             variant="outline"
             onClick={() => {
