@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CheckCircle2, Users, Lock, Zap, ArrowRight, BarChart3, Clock, Shield } from "lucide-react";
 import Hero3D from "@/components/landing/Hero3D";
 import TechBackground from "@/components/landing/TechBackground";
+import logoBEG from "@/assets/logoBEG.png";
 
 const Landing = () => {
   return (
@@ -11,9 +12,7 @@ const Landing = () => {
       <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-primary">
-              BegTask
-            </h2>
+            <img src={logoBEG} alt="BEG Inovação" className="h-10" />
             <Link to="/auth">
               <Button variant="default" className="gap-2">
                 Acessar <ArrowRight className="w-4 h-4" />
@@ -33,7 +32,7 @@ const Landing = () => {
             Gestão de Tarefas Profissional
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-foreground leading-tight bg-gradient-to-r from-primary via-purple-600 to-primary bg-clip-text text-transparent animate-fade-in">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-foreground leading-tight bg-gradient-to-r from-primary via-[hsl(40,79%,53%)] to-primary bg-clip-text text-transparent animate-fade-in">
             Organize. Execute.<br/>Transforme.
           </h1>
           
@@ -169,7 +168,7 @@ const Landing = () => {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-primary/10 via-purple-500/10 to-primary/10 p-12 rounded-2xl shadow-hover border border-primary/20 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
+        <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-primary/10 via-[hsl(40,79%,53%)]/10 to-primary/10 p-12 rounded-2xl shadow-hover border border-primary/20 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
             Pronto para transformar sua produtividade?
           </h2>
@@ -190,9 +189,7 @@ const Landing = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-4 gap-8 mb-8">
               <div className="md:col-span-2">
-                <h3 className="text-2xl font-bold text-primary mb-3">
-                  BegTask
-                </h3>
+                <img src={logoBEG} alt="BEG Inovação" className="h-12 mb-3" />
                 <p className="text-sm text-muted-foreground mb-4 max-w-md">
                   A plataforma de gestão de tarefas que une simplicidade, eficiência e colaboração em tempo real.
                 </p>
