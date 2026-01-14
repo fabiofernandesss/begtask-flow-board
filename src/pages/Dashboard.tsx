@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import BoardCard from "@/components/dashboard/BoardCard";
 import CreateBoardDialog from "@/components/dashboard/CreateBoardDialog";
 import UserProfile from "@/components/dashboard/UserProfile";
+import logoBEG from "@/assets/logoBEG.png";
 
 interface Board {
   id: string;
@@ -104,7 +105,7 @@ const Dashboard = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary">BegTask</h1>
+            <img src={logoBEG} alt="BEG Inovação" className="h-8" />
             
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
