@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Space Grotesk", "sans-serif"],
+        sans: ["Bubbleboddy Neue Trial", "Space Grotesk", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
