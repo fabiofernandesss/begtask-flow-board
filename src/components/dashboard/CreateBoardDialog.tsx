@@ -55,11 +55,17 @@ const CreateBoardDialog = ({ open, onOpenChange, onBoardCreated }: CreateBoardDi
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Hash password server-side using pgcrypto
+      const { data: hashData, error: hashError } = await supabase.rpc('hash_board_password', {
+        _password: senha.trim()
+      });
+      if (hashError) throw hashError;
+
       const { data: newBoard, error } = await supabase.from("boards").insert({
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
         publico,
-        senha_hash: senha, // Em produção, hash a senha no backend
+        senha_hash: hashData,
         owner_id: user.id,
       }).select().single();
 
@@ -85,8 +91,6 @@ const CreateBoardDialog = ({ open, onOpenChange, onBoardCreated }: CreateBoardDi
           description: "Board criado, mas houve erro ao criar colunas padrão. Você pode criá-las manualmente.",
           variant: "destructive",
         });
-      } else {
-        console.log("Colunas padrão criadas com sucesso");
       }
 
       toast({

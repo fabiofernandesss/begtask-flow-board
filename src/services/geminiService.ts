@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 interface GeminiTask {
   titulo: string;
   descricao?: string;
@@ -15,72 +17,24 @@ interface GeminiResponse {
 }
 
 class GeminiService {
-  private apiKey: string;
-  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-  constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!this.apiKey) {
-      throw new Error('GEMINI_API_KEY não configurada');
-    }
-  }
-
   private async callGemini(prompt: string): Promise<string> {
-    const response = await fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': this.apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          topK: 1,
-          topP: 1,
-          maxOutputTokens: 1200,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      }),
+    const { data, error } = await supabase.functions.invoke('ai-chat', {
+      body: { prompt },
     });
 
-    if (!response.ok) {
-      throw new Error(`Erro na API do Gemini: ${response.status}`);
+    if (error) {
+      throw new Error(`Erro na API do Gemini: ${error.message}`);
     }
 
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return data?.text || '';
   }
 
   private parseJsonResponse(text: string): any {
     try {
-      // Remove markdown code blocks se existirem
       const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       return JSON.parse(cleanText);
     } catch (error) {
       console.error('Erro ao fazer parse do JSON:', error);
-      console.error('Texto recebido:', text);
       throw new Error('Resposta da IA não está em formato JSON válido');
     }
   }
@@ -165,16 +119,15 @@ IMPORTANTE: Responda APENAS com um JSON válido no formato:
 ]
 
 Regras:
-- Se o usuário especificar explicitamente a quantidade de colunas/blocos, respeite exatamente esse número (ex.: "2 blocos" = 2 colunas)
+- Se o usuário especificar explicitamente a quantidade de colunas/blocos, respeite exatamente esse número
 - Caso não especifique quantidade, gere entre 2-4 colunas específicas para o projeto
 - NÃO use colunas genéricas como "A Fazer", "Fazendo", "Feito"
 - Se o usuário pedir colunas vazias, retorne "tasks": [] para todas as colunas
-- Nunca adicione tarefas às colunas "Em andamento" e "Concluídas"; mantenha-as sempre com "tasks": []
-- Quando incluir tarefas, limite a no máximo 5 por coluna, com descrições objetivas
+- Nunca adicione tarefas às colunas "Em andamento" e "Concluídas"
+- Quando incluir tarefas, limite a no máximo 5 por coluna
 - Tarefas devem ter título, descrição, prioridade e estimativa de horas
 - Prioridade deve ser: "alta", "media" ou "baixa"
 - Estimativa em horas (número inteiro)
-- Nunca inclua contadores/numerações soltas ou texto fora do JSON
 
 Prompt do usuário: ${prompt}`;
 
@@ -208,7 +161,6 @@ Prompt do usuário: ${prompt}`;
     return { data };
   }
 
-  // Gera tarefas para uma coluna específica, em lotes controlados
   async generateTasksForColumn(
     userPrompt: string,
     columnTitle: string,
@@ -223,7 +175,7 @@ Prompt do usuário: ${prompt}`;
 
     const systemPrompt = `Você é um assistente de gestão de projetos. Gere tarefas APENAS para a coluna "${columnTitle}".
 
-IMPORTANTE: Responda SOMENTE com JSON válido (sem comentários ou texto solto), no formato:
+IMPORTANTE: Responda SOMENTE com JSON válido, no formato:
 [
   {
     "titulo": "Nome da Tarefa",
@@ -234,13 +186,12 @@ IMPORTANTE: Responda SOMENTE com JSON válido (sem comentários ou texto solto),
 ]
 
 Regras:
-- Gere exatamente ${safeCount} tarefas (se não fizer sentido, ajuste levemente, mas mantenha ${safeCount} como meta)
-- Descrições entre 2-4 frases (35-80 palavras), com objetivo, critérios de aceite e resultado esperado (sem bullet points)
+- Gere exatamente ${safeCount} tarefas
+- Descrições entre 2-4 frases (35-80 palavras)
 - Evite títulos já usados: [${existingList || 'nenhum'}]
 - Prioridade deve ser "alta", "media" ou "baixa"
 - Estimativa em horas deve ser um número inteiro
 - NUNCA gere tarefas para colunas com título "Em andamento" ou "Concluídas"
-- Não inclua nada além do JSON solicitado
 
 Contexto do projeto e pedido do usuário:
 ${userPrompt}`;
@@ -253,7 +204,6 @@ ${userPrompt}`;
     return parsed.filter(task => task && task.titulo && task.titulo.trim());
   }
 
-  // Corrige e melhora texto de transcrição (sem adicionar conteúdo extra)
   async correctTranscription(texto: string): Promise<string> {
     const systemPrompt = `Você receberá um texto transcrito em português a partir de áudio.
 
