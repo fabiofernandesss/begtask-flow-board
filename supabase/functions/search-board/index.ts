@@ -6,7 +6,7 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/text
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, content-type, x-client-info, apikey, x-supabase-api-key",
+  "Access-Control-Allow-Headers": "authorization, content-type, x-client-info, apikey, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Credentials": "true",
 };
 
