@@ -51,6 +51,19 @@ Deno.serve(async (req: Request) => {
       return new Response('ok', { headers: { ...corsHeaders } });
     }
 
+    // Validate JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const { error: claimsError } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (claimsError) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
@@ -60,11 +73,10 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: false, error: 'Missing board_id or query' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
       return new Response(JSON.stringify({ success: false, error: 'Supabase service role not configured' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
     if (!GEMINI_API_KEY) {
