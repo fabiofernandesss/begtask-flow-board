@@ -83,7 +83,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: false, error: 'GEMINI_API_KEY not set' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(supabaseUrl, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data: vectors, error: vecErr } = await supabase
       .from('board_vectors')

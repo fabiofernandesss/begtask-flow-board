@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
     }
     // Note: GEMINI_API_KEY is optional for testing - will use dummy vectors if not available
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(supabaseUrl, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data: board, error: boardErr } = await supabase
       .from('boards')
