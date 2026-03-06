@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
       return new Response(JSON.stringify({ success: false, error: 'Supabase service role not configured' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
     }
     // Note: GEMINI_API_KEY is optional for testing - will use dummy vectors if not available
