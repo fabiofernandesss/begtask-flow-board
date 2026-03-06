@@ -69,11 +69,13 @@ const EditBoardDialog = ({ board, open, onOpenChange, onUpdated }: EditBoardDial
         publico: publico
       };
 
-      // Se uma nova senha foi fornecida, hash ela
+      // Hash password server-side using pgcrypto
       if (senha.trim()) {
-        // Usando uma hash simples para demonstração - em produção, use bcrypt
-        const hashedPassword = btoa(senha.trim());
-        updateData.senha_hash = hashedPassword;
+        const { data: hashData, error: hashError } = await supabase.rpc('hash_board_password', {
+          _password: senha.trim()
+        });
+        if (hashError) throw hashError;
+        updateData.senha_hash = hashData;
       }
 
       // Se o board não é mais público, remover a senha
