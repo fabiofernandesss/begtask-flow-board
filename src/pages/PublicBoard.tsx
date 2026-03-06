@@ -768,7 +768,7 @@ const PublicBoard = () => {
       }
 
       // Salvar resposta da IA
-      const { data: aiMessage, error: aiError } = await supabase
+      const { data: aiMessage, error: aiSaveError } = await supabase
         .from("board_messages" as any)
         .insert({
           board_id: id,
