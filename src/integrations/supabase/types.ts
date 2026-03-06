@@ -567,6 +567,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_board_password: { Args: { _password: string }; Returns: string }
       is_public_board_task: { Args: { _task_id: string }; Returns: boolean }
       is_user_active: { Args: { _user_id: string }; Returns: boolean }
       sync_multas: { Args: { items: Json }; Returns: number }
@@ -584,6 +585,10 @@ export type Database = {
       }
       user_owns_column_board: {
         Args: { _column_id: string; _user_id: string }
+        Returns: boolean
+      }
+      verify_board_password: {
+        Args: { _board_id: string; _password: string }
         Returns: boolean
       }
     }
