@@ -177,6 +177,28 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Validate JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const sb = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { error: claimsError } = await sb.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (claimsError) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Método não permitido' }),
@@ -195,8 +217,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Gerando dados para tipo: ${requestData.type}, prompt: ${requestData.prompt}`);
 
-    const headerApiKey = req.headers.get('x-goog-api-key') || undefined;
-    const generatedData = await generateWithGemini(requestData.prompt, requestData.type, headerApiKey);
+    const generatedData = await generateWithGemini(requestData.prompt, requestData.type);
     console.log('Gemini executou com sucesso!');
 
     const processedData = postProcessColumns(generatedData, requestData.type);
