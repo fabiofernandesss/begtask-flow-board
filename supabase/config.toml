@@ -6,3 +6,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.search-board]
 verify_jwt = false
+[functions.ai-chat]
+verify_jwt = false

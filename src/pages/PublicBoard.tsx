@@ -207,10 +207,16 @@ const PublicBoard = () => {
     setAuthenticating(true);
 
     try {
-      const hashedPassword = btoa(password);
+      // Verify password server-side using pgcrypto
+      const { data: isValid, error: verifyError } = await supabase.rpc('verify_board_password', {
+        _board_id: id,
+        _password: password
+      });
       
-      if (hashedPassword === board?.senha_hash) {
-        sessionStorage.setItem(`board_password_${id}`, hashedPassword);
+      if (verifyError) throw verifyError;
+      
+      if (isValid) {
+        sessionStorage.setItem(`board_password_${id}`, 'verified');
         setNeedsPassword(false);
         setLoading(true);
         await fetchColumns();
@@ -751,53 +757,18 @@ const PublicBoard = () => {
 
       const prompt = `Você é um assistente de IA ajudando no projeto "${board?.titulo}".\n\nContexto do projeto:\n${JSON.stringify(boardContext, null, 2)}\n\nPergunta do usuário: ${userMessage}\n\nResponda de forma útil. Se a pergunta não estiver diretamente relacionada ao projeto, responda mesmo assim de forma geral, e quando possível conecte com o projeto.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-goog-api-key": import.meta.env.VITE_GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 1,
-            topP: 1,
-            maxOutputTokens: 500,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
-          ]
-        }),
+      let aiResponseText = "Não consegui gerar uma resposta agora.";
+      
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('ai-chat', {
+        body: { prompt },
       });
 
-      let aiResponseText = "Não consegui gerar uma resposta agora.";
-      if (response.ok) {
-        const data = await response.json();
-        aiResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || aiResponseText;
+      if (!aiError && aiData?.text) {
+        aiResponseText = aiData.text;
       }
 
       // Salvar resposta da IA
-      const { data: aiMessage, error: aiError } = await supabase
+      const { data: aiMessage, error: aiSaveError } = await supabase
         .from("board_messages" as any)
         .insert({
           board_id: id,
@@ -809,7 +780,7 @@ const PublicBoard = () => {
         .select()
         .single();
 
-      if (aiError) throw aiError;
+      if (aiSaveError) throw aiSaveError;
 
       // Atualizar lista de mensagens com a resposta da IA
       setBoardMessages(prev => [...prev, aiMessage] as any);

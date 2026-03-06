@@ -776,51 +776,17 @@ Pergunta do usuário: ${userMessage}
 
 Responda de forma útil e específica sobre o projeto, suas tarefas, progresso ou sugestões de melhoria. Seja conciso mas informativo.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-goog-api-key": import.meta.env.VITE_GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Você é um assistente especializado em gestão de projetos. Seja útil, conciso e focado no contexto do projeto fornecido.\n\n${prompt}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 1,
-            topP: 1,
-            maxOutputTokens: 500,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
-          ]
-        }),
+      const fullPrompt = `Você é um assistente especializado em gestão de projetos. Seja útil, conciso e focado no contexto do projeto fornecido.\n\n${prompt}`;
+
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { prompt: fullPrompt },
       });
 
-      if (!response.ok) {
+      if (error) {
         throw new Error("Erro na API do Gemini");
       }
 
-      const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui gerar uma resposta no momento.";
+      return data?.text || "Desculpe, não consegui gerar uma resposta no momento.";
     } catch (error) {
       console.error("Erro ao gerar resposta da IA:", error);
       return "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.";

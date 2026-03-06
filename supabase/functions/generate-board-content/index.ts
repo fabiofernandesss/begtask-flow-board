@@ -1,8 +1,10 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-goog-api-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
@@ -86,9 +88,9 @@ function buildPrompt(prompt: string, type: string): string {
   return `Contexto: "${prompt}". Gere EXATAMENTE 3 colunas específicas do domínio em pt-BR. REGRAS: - NÃO inclua colunas padrão - Títulos das colunas: máximo 30 caracteres cada - Cada coluna: EXATAMENTE 4 tarefas práticas e específicas - LIMITE TOTAL: máximo 2000 caracteres na resposta. Retorne APENAS o JSON das colunas com tarefas, SEM explicações.`;
 }
 
-async function generateWithGemini(prompt: string, type: string, apiKeyOverride?: string): Promise<any[]> {
-  const apiKey = apiKeyOverride || Deno.env.get('GEMINI_API_KEY') || 'AIzaSyDH3jq7MVIsdU0jm5QTtWPKRvxvlChuEM8';
-  console.log('API Key configurada:', apiKey ? `Sim (${apiKey.substring(0, 10)}...)` : 'Não');
+async function generateWithGemini(prompt: string, type: string): Promise<any[]> {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY não configurada');
   if (!apiKey) throw new Error('GEMINI_API_KEY não configurada');
 
   const promptText = buildPrompt(prompt, type);
@@ -175,6 +177,28 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Validate JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const sb = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { error: claimsError } = await sb.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (claimsError) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Método não permitido' }),
@@ -193,8 +217,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Gerando dados para tipo: ${requestData.type}, prompt: ${requestData.prompt}`);
 
-    const headerApiKey = req.headers.get('x-goog-api-key') || undefined;
-    const generatedData = await generateWithGemini(requestData.prompt, requestData.type, headerApiKey);
+    const generatedData = await generateWithGemini(requestData.prompt, requestData.type);
     console.log('Gemini executou com sucesso!');
 
     const processedData = postProcessColumns(generatedData, requestData.type);
