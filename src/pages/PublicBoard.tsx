@@ -207,9 +207,15 @@ const PublicBoard = () => {
     setAuthenticating(true);
 
     try {
-      const hashedPassword = btoa(password);
+      // Verify password server-side using pgcrypto
+      const { data: isValid, error: verifyError } = await supabase.rpc('verify_board_password', {
+        _board_id: id,
+        _password: password
+      });
       
-      if (hashedPassword === board?.senha_hash) {
+      if (verifyError) throw verifyError;
+      
+      if (isValid) {
         sessionStorage.setItem(`board_password_${id}`, hashedPassword);
         setNeedsPassword(false);
         setLoading(true);
