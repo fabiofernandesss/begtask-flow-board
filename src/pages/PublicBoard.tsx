@@ -216,7 +216,7 @@ const PublicBoard = () => {
       if (verifyError) throw verifyError;
       
       if (isValid) {
-        sessionStorage.setItem(`board_password_${id}`, hashedPassword);
+        sessionStorage.setItem(`board_password_${id}`, 'verified');
         setNeedsPassword(false);
         setLoading(true);
         await fetchColumns();
