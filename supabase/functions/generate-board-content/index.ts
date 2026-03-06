@@ -88,9 +88,9 @@ function buildPrompt(prompt: string, type: string): string {
   return `Contexto: "${prompt}". Gere EXATAMENTE 3 colunas específicas do domínio em pt-BR. REGRAS: - NÃO inclua colunas padrão - Títulos das colunas: máximo 30 caracteres cada - Cada coluna: EXATAMENTE 4 tarefas práticas e específicas - LIMITE TOTAL: máximo 2000 caracteres na resposta. Retorne APENAS o JSON das colunas com tarefas, SEM explicações.`;
 }
 
-async function generateWithGemini(prompt: string, type: string, apiKeyOverride?: string): Promise<any[]> {
-  const apiKey = apiKeyOverride || Deno.env.get('GEMINI_API_KEY') || 'AIzaSyDH3jq7MVIsdU0jm5QTtWPKRvxvlChuEM8';
-  console.log('API Key configurada:', apiKey ? `Sim (${apiKey.substring(0, 10)}...)` : 'Não');
+async function generateWithGemini(prompt: string, type: string): Promise<any[]> {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY não configurada');
   if (!apiKey) throw new Error('GEMINI_API_KEY não configurada');
 
   const promptText = buildPrompt(prompt, type);
