@@ -780,7 +780,7 @@ const PublicBoard = () => {
         .select()
         .single();
 
-      if (aiError) throw aiError;
+      if (aiSaveError) throw aiSaveError;
 
       // Atualizar lista de mensagens com a resposta da IA
       setBoardMessages(prev => [...prev, aiMessage] as any);
