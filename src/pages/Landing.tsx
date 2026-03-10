@@ -32,7 +32,7 @@ const Landing = () => {
             Gestão de Tarefas Profissional
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-foreground leading-tight bg-gradient-to-r from-primary via-[hsl(40,79%,53%)] to-primary bg-clip-text text-transparent animate-fade-in">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-foreground leading-tight bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent animate-fade-in">
             Organize. Execute.<br/>Transforme.
           </h1>
           
