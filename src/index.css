@@ -123,9 +123,9 @@ All colors MUST be HSL.
     --popover: 0 0% 25%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 27 95% 60%;
-    --primary-foreground: 12 81% 14%;
-    --primary-hover: 222 79% 38%;
+    --primary: 222 79% 57%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 222 79% 48%;
     --primary-light: 222 79% 20%;
 
     --accent-gold: 45 85% 51%;
