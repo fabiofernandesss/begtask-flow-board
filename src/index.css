@@ -29,8 +29,8 @@ All colors MUST be HSL.
     --primary-hover: 222 79% 38%;
     --primary-light: 222 79% 96%;
 
-    /* Accent - BEG Gold #e8b61a */
-    --accent-gold: 45 85% 51%;
+    /* Accent - BEG Purple from logo */
+    --accent-gold: 280 70% 50%;
     --accent-gold-foreground: 0 0% 100%;
 
     /* Secondary */
