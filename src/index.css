@@ -23,11 +23,11 @@ All colors MUST be HSL.
     --popover: 0 0% 89%;
     --popover-foreground: 0 0% 9%;
 
-    /* Primary - BEG Blue #013b9b */
-    --primary: 214 99% 31%;
+    /* Primary - BEG Blue from logo */
+    --primary: 222 79% 47%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 99% 24%;
-    --primary-light: 214 99% 95%;
+    --primary-hover: 222 79% 38%;
+    --primary-light: 222 79% 96%;
 
     /* Accent - BEG Purple from logo */
     --accent-gold: 280 70% 50%;
@@ -65,7 +65,7 @@ All colors MUST be HSL.
     /* Border and input */
     --border: 0 0% 83%;
     --input: 0 0% 83%;
-    --ring: 214 99% 31%;
+    --ring: 222 79% 47%;
 
     /* Radius - compact design */
     --radius: 0.75rem;
@@ -73,24 +73,24 @@ All colors MUST be HSL.
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 214 99% 31%;
+    --sidebar-primary: 222 79% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 32%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 83%;
-    --sidebar-ring: 214 99% 31%;
+    --sidebar-ring: 222 79% 47%;
 
     /* Gradients */
-    --gradient-primary: hsl(214 99% 31%);
-    --gradient-subtle: hsl(0 0% 100%);
-    --gradient-card: hsl(0 0% 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(222 79% 47%) 0%, hsl(222 79% 57%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 14% 99%) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 2px 8px hsl(214 99% 31% / 0.08);
-    --shadow-hover: 0 8px 24px hsl(214 99% 31% / 0.12);
+    --shadow-card: 0 2px 8px hsl(222 79% 47% / 0.08);
+    --shadow-hover: 0 8px 24px hsl(222 79% 47% / 0.12);
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -123,10 +123,10 @@ All colors MUST be HSL.
     --popover: 0 0% 25%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 214 99% 38%;
+    --primary: 222 79% 57%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 99% 30%;
-    --primary-light: 214 99% 20%;
+    --primary-hover: 222 79% 48%;
+    --primary-light: 222 79% 20%;
 
     --accent-gold: 280 70% 60%;
     --accent-gold-foreground: 0 0% 100%;
@@ -155,20 +155,20 @@ All colors MUST be HSL.
 
     --border: 0 0% 32%;
     --input: 0 0% 32%;
-    --ring: 214 99% 38%;
+    --ring: 222 79% 57%;
 
     --sidebar-background: 224 65% 8%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 214 99% 38%;
+    --sidebar-primary: 222 79% 57%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 43 96% 56%;
     --sidebar-accent-foreground: 20 91% 14%;
     --sidebar-border: 0 0% 32%;
-    --sidebar-ring: 214 99% 38%;
+    --sidebar-ring: 222 79% 57%;
 
-    --gradient-primary: hsl(214 99% 38%);
-    --gradient-subtle: hsl(0 0% 9%);
-    --gradient-card: hsl(0 0% 14%);
+    --gradient-primary: linear-gradient(135deg, hsl(222 79% 47%) 0%, hsl(222 79% 57%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(224 71% 4%) 0%, hsl(224 65% 8%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(224 65% 8%) 0%, hsl(224 65% 10%) 100%);
 
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
