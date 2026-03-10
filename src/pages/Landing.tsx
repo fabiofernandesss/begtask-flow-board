@@ -189,7 +189,7 @@ const Landing = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-4 gap-8 mb-8">
               <div className="md:col-span-2">
-                <img src={logoBEG} alt="BEG Inovação" className="h-12 mb-3" />
+                <img src={logoBEG} alt="BEG Inovação" className="h-16 mb-3" />
                 <p className="text-sm text-muted-foreground mb-4 max-w-md">
                   A plataforma de gestão de tarefas que une simplicidade, eficiência e colaboração em tempo real.
                 </p>
