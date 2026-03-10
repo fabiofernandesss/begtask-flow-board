@@ -89,8 +89,8 @@ All colors MUST be HSL.
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 2px 8px hsl(222 79% 47% / 0.08);
-    --shadow-hover: 0 8px 24px hsl(222 79% 47% / 0.12);
+    --shadow-card: 0 2px 8px hsl(187 99% 43% / 0.08);
+    --shadow-hover: 0 8px 24px hsl(187 99% 43% / 0.12);
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
