@@ -166,9 +166,9 @@ All colors MUST be HSL.
     --sidebar-border: 0 0% 32%;
     --sidebar-ring: 214 99% 38%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(222 79% 47%) 0%, hsl(222 79% 57%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(224 71% 4%) 0%, hsl(224 65% 8%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(224 65% 8%) 0%, hsl(224 65% 10%) 100%);
+    --gradient-primary: hsl(214 99% 38%);
+    --gradient-subtle: hsl(0 0% 9%);
+    --gradient-card: hsl(0 0% 14%);
 
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
