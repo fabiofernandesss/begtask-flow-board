@@ -6,7 +6,7 @@ const AnimatedLogo = () => {
       <img 
         src={logoBEG} 
         alt="BEG Inovação" 
-        className="h-24 animate-fade-in"
+        className="h-28 animate-fade-in"
       />
     </div>
   );
