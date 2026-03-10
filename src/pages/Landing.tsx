@@ -168,7 +168,7 @@ const Landing = () => {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-primary/10 via-[hsl(40,79%,53%)]/10 to-primary/10 p-12 rounded-2xl shadow-hover border border-primary/20 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
+        <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 p-12 rounded-2xl shadow-hover border border-primary/20 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
             Pronto para transformar sua produtividade?
           </h2>
