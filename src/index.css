@@ -23,11 +23,11 @@ All colors MUST be HSL.
     --popover: 0 0% 89%;
     --popover-foreground: 0 0% 9%;
 
-    /* Primary - BEG Blue from logo */
-    --primary: 222 79% 47%;
+    /* Primary - BEG Blue #013b9b */
+    --primary: 214 99% 31%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 222 79% 38%;
-    --primary-light: 222 79% 96%;
+    --primary-hover: 214 99% 24%;
+    --primary-light: 214 99% 95%;
 
     /* Accent - BEG Purple from logo */
     --accent-gold: 280 70% 50%;
