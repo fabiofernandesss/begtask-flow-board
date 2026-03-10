@@ -63,7 +63,7 @@ const Hero3D = () => {
 
         ctx.beginPath();
         ctx.arc(x2d, y2d, size2d, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(124, 58, 237, ${opacity * 0.6})`;
+        ctx.fillStyle = `rgba(129, 35, 197, ${opacity * 0.6})`;
         ctx.fill();
       }
     }
@@ -96,7 +96,7 @@ const Hero3D = () => {
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 150)})`;
+            ctx.strokeStyle = `rgba(129, 35, 197, ${0.15 * (1 - distance / 150)})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
