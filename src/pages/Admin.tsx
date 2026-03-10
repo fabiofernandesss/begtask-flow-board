@@ -176,7 +176,7 @@ const Admin = () => {
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Dashboard
             </Link>
-            <img src={logoBEG} alt="BEG Inovação" className="h-14" />
+            <img src={logoBEG} alt="BEG Inovação" className="h-20" />
           </div>
         </div>
 
