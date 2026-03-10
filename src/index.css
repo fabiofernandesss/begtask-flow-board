@@ -23,14 +23,14 @@ All colors MUST be HSL.
     --popover: 0 0% 89%;
     --popover-foreground: 0 0% 9%;
 
-    /* Primary - BEG Blue #1a50d6 */
-    --primary: 20 90% 48%;
-    --primary-foreground: 33 100% 96%;
+    /* Primary - BEG Blue from logo */
+    --primary: 222 79% 47%;
+    --primary-foreground: 0 0% 100%;
     --primary-hover: 222 79% 38%;
     --primary-light: 222 79% 96%;
 
-    /* Accent - BEG Gold #e8b61a */
-    --accent-gold: 45 85% 51%;
+    /* Accent - BEG Purple from logo */
+    --accent-gold: 280 70% 50%;
     --accent-gold-foreground: 0 0% 100%;
 
     /* Secondary */
@@ -65,7 +65,7 @@ All colors MUST be HSL.
     /* Border and input */
     --border: 0 0% 83%;
     --input: 0 0% 83%;
-    --ring: 20 90% 48%;
+    --ring: 222 79% 47%;
 
     /* Radius - compact design */
     --radius: 0.75rem;
@@ -73,12 +73,12 @@ All colors MUST be HSL.
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 20 90% 48%;
-    --sidebar-primary-foreground: 33 100% 96%;
+    --sidebar-primary: 222 79% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 32%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 83%;
-    --sidebar-ring: 20 90% 48%;
+    --sidebar-ring: 222 79% 47%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(222 79% 47%) 0%, hsl(222 79% 57%) 100%);
@@ -123,12 +123,12 @@ All colors MUST be HSL.
     --popover: 0 0% 25%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 27 95% 60%;
-    --primary-foreground: 12 81% 14%;
-    --primary-hover: 222 79% 38%;
+    --primary: 222 79% 57%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 222 79% 48%;
     --primary-light: 222 79% 20%;
 
-    --accent-gold: 45 85% 51%;
+    --accent-gold: 280 70% 60%;
     --accent-gold-foreground: 0 0% 100%;
 
     --secondary: 0 0% 45%;
@@ -155,16 +155,16 @@ All colors MUST be HSL.
 
     --border: 0 0% 32%;
     --input: 0 0% 32%;
-    --ring: 27 95% 60%;
+    --ring: 222 79% 57%;
 
     --sidebar-background: 224 65% 8%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 27 95% 60%;
-    --sidebar-primary-foreground: 12 81% 14%;
+    --sidebar-primary: 222 79% 57%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 43 96% 56%;
     --sidebar-accent-foreground: 20 91% 14%;
     --sidebar-border: 0 0% 32%;
-    --sidebar-ring: 27 95% 60%;
+    --sidebar-ring: 222 79% 57%;
 
     --gradient-primary: linear-gradient(135deg, hsl(222 79% 47%) 0%, hsl(222 79% 57%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(224 71% 4%) 0%, hsl(224 65% 8%) 100%);
