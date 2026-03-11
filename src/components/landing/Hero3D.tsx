@@ -70,7 +70,7 @@ const Hero3D = () => {
 
     // Create particles
     const particles: Particle[] = [];
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 30; i++) {
       particles.push(new Particle());
     }
 
@@ -117,7 +117,7 @@ const Hero3D = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full opacity-20"
+      className="absolute inset-0 w-full h-full opacity-10"
       style={{ mixBlendMode: 'screen' }}
     />
   );

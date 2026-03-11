@@ -81,7 +81,7 @@ const TechBackground = () => {
     }
 
     const cards: FloatingCard[] = [];
-    const cardCount = 10;
+    const cardCount = 6;
 
     for (let i = 0; i < cardCount; i++) {
       cards.push(new FloatingCard());
@@ -117,7 +117,7 @@ const TechBackground = () => {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.35 }}
+      style={{ opacity: 0.2 }}
     />
   );
 };
