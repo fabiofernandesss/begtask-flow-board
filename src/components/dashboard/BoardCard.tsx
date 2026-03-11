@@ -167,17 +167,29 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
 
         const { data: tasksData, error: tasksError } = await supabase
           .from("tasks")
-          .select("responsavel_id")
+          .select("id, responsavel_id")
           .in("column_id", columnIds);
         if (tasksError) throw tasksError;
 
         setStats({ columnsCount, tasksCount: tasksData?.length || 0 });
 
-        const uniqueResponsavelIds = [...new Set(
-          (tasksData || []).map(t => t.responsavel_id).filter((v): v is string => Boolean(v))
-        )];
+        // Collect responsavel_ids
+        const responsavelIds = (tasksData || []).map(t => t.responsavel_id).filter((v): v is string => Boolean(v));
+
+        // Also fetch task_participants
+        const taskIds = (tasksData || []).map(t => t.id);
+        let participantUserIds: string[] = [];
+        if (taskIds.length > 0) {
+          const { data: participantsData } = await supabase
+            .from("task_participants")
+            .select("user_id")
+            .in("task_id", taskIds);
+          participantUserIds = (participantsData || []).map(p => p.user_id);
+        }
+
+        const allUserIds = [...new Set([...responsavelIds, ...participantUserIds])];
         
-        if (uniqueResponsavelIds.length === 0) {
+        if (allUserIds.length === 0) {
           setTeamMembers([]);
           return;
         }
@@ -185,7 +197,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         const { data: profilesData, error: profilesError } = await supabase
           .from("profiles")
           .select("id, nome, foto_perfil")
-          .in("id", uniqueResponsavelIds);
+          .in("id", allUserIds);
         if (profilesError) throw profilesError;
 
         setTeamMembers(profilesData || []);
