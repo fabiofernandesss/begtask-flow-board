@@ -12,7 +12,7 @@ const Landing = () => {
       <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-1.5">
           <div className="flex justify-between items-center">
-            <img src={logoBEG} alt="BEG Inovação" className="h-14" />
+            <img src={logoBEG} alt="BEG Inovação" className="h-20 -my-3" />
             <Link to="/auth">
               <Button variant="default" className="gap-2">
                 Acessar <ArrowRight className="w-4 h-4" />
