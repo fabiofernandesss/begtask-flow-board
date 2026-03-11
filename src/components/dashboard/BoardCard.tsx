@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Lock, Globe, Calendar, Edit } from "lucide-react";
+import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EditBoardDialog from "./EditBoardDialog";
 import { notificationService } from "@/services/notificationService";
@@ -51,7 +51,6 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      // Buscar dados do board e todas as tarefas antes de excluir
       const { data: boardData, error: boardError } = await supabase
         .from("boards")
         .select(`
@@ -72,7 +71,6 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
 
       if (boardError) throw boardError;
 
-      // Excluir o board (colunas e tarefas serão excluídas em cascata)
       const { error } = await supabase
         .from("boards")
         .delete()
@@ -80,14 +78,12 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
 
       if (error) throw error;
 
-      // Enviar notificações WhatsApp para todos os responsáveis das tarefas
       if (boardData?.columns && boardData.columns.length > 0) {
         const allTasks = boardData.columns.flatMap(column => column.tasks || []);
         const tasksWithResponsaveis = allTasks.filter(task => task.responsavel_id);
         
         const notificationPromises = tasksWithResponsaveis.map(async (task) => {
           try {
-            // Buscar dados do responsável
             const { data: profileData, error: profileError } = await supabase
               .from("profiles")
               .select("nome, telefone")
@@ -108,11 +104,9 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
             }
           } catch (whatsappError) {
             console.error("Erro ao enviar notificação WhatsApp:", whatsappError);
-            // Não falha a operação principal se o WhatsApp falhar
           }
         });
 
-        // Executar todas as notificações em paralelo
         await Promise.allSettled(notificationPromises);
       }
 
@@ -175,201 +169,188 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
     fetchTeamMembers();
   }, [board.id]);
 
+  const deleteConfirmDialog = (
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta ação não pode ser desfeita. O bloco "{board.titulo}" e todas as suas tarefas serão excluídos permanentemente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            {deleting ? "Excluindo..." : "Excluir"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const editDialog = (
+    <EditBoardDialog
+      board={board}
+      open={editDialogOpen}
+      onOpenChange={setEditDialogOpen}
+      onUpdated={onDeleted}
+    />
+  );
+
   if (viewMode === "list") {
     return (
       <>
-        <Card className="hover:shadow-hover transition-all duration-300 hover:scale-[1.02] border-border/50">
-          <CardContent className="p-6">
+        <Card className="hover:border-primary/30 transition-all duration-200 border-border/50">
+          <CardContent className="p-4">
             <div className="flex justify-between items-center gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
+              <div
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={() => navigate(`/board/${board.id}`)}
+              >
+                <div className="flex items-center gap-2 mb-1">
                   {board.publico ? (
-                    <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                    <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                   ) : (
-                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                   )}
-                  <h3 className="text-lg font-semibold truncate">{board.titulo}</h3>
+                  <h3 className="text-sm font-semibold truncate">{board.titulo}</h3>
                 </div>
                 {board.descricao && (
-                  <p className="text-sm text-muted-foreground line-clamp-1 ml-7">
+                  <p className="text-xs text-muted-foreground line-clamp-1 ml-5.5">
                     {board.descricao}
                   </p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 ml-7">
+              </div>
+
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {format(new Date(board.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </div>
+                  {format(new Date(board.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                </span>
+
                 {teamMembers.length > 0 && (
-                  <div className="mt-3 ml-7 flex justify-end">
-                    <div className="flex -space-x-2">
-                      {teamMembers.slice(0, 5).map((member) => (
-                        <div key={member.id} className="relative group" title={member.nome}>
-                          <Avatar className="w-6 h-6 border-2 border-background">
-                            <AvatarImage src={member.foto_perfil || undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                              {member.nome.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex -space-x-1.5">
+                    {teamMembers.slice(0, 4).map((member) => (
+                      <Avatar key={member.id} className="w-6 h-6 border-2 border-background" title={member.nome}>
+                        <AvatarImage src={member.foto_perfil || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                          {member.nome.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                    {teamMembers.length > 4 && (
+                      <div className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] text-muted-foreground font-medium">
+                        +{teamMembers.length - 4}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-              
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button onClick={() => navigate(`/board/${board.id}`)}>
-                  Abrir
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setEditDialogOpen(true)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setEditDialogOpen(true)}
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <EditBoardDialog
-          board={board}
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          onUpdated={onDeleted}
-        />
-
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. O bloco "{board.titulo}" e todas as suas tarefas serão excluídos permanentemente.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                disabled={deleting}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                {deleting ? "Excluindo..." : "Excluir"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {editDialog}
+        {deleteConfirmDialog}
       </>
     );
   }
 
   return (
     <>
-      <Card className="hover:shadow-hover transition-all duration-300 hover:scale-105 border-border/50 group">
-        <CardHeader>
-          <div className="flex justify-between items-start gap-2">
+      <Card className="hover:border-primary/30 transition-all duration-200 border-border/50 group cursor-pointer"
+            onClick={() => navigate(`/board/${board.id}`)}>
+        <CardContent className="p-4">
+          {/* Header: icon + title + actions */}
+          <div className="flex justify-between items-start gap-2 mb-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {board.publico ? (
-                <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
               ) : (
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
               )}
-              <CardTitle className="truncate">{board.titulo}</CardTitle>
+              <h3 className="text-sm font-semibold truncate leading-tight">{board.titulo}</h3>
             </div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setEditDialogOpen(true)}
-                className="flex-shrink-0"
+                className="h-7 w-7"
+                onClick={(e) => { e.stopPropagation(); setEditDialogOpen(true); }}
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="w-3.5 h-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
+                className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
+
+          {/* Description */}
           {board.descricao && (
-            <CardDescription className="line-clamp-2">
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 ml-5.5">
               {board.descricao}
-            </CardDescription>
+            </p>
           )}
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+
+          {/* Footer: date + members + arrow */}
+          <div className="flex justify-between items-center mt-auto pt-2 border-t border-border/30">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <Calendar className="w-3 h-3" />
               {format(new Date(board.created_at), "dd/MM/yyyy", { locale: ptBR })}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {teamMembers.length > 0 && (
-                <div className="flex -space-x-2">
-                  {teamMembers.slice(0, 5).map((member) => (
-                    <div key={member.id} className="relative group" title={member.nome}>
-                      <Avatar className="w-6 h-6 border-2 border-background">
-                        <AvatarImage src={member.foto_perfil || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                          {member.nome.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
+                <div className="flex -space-x-1.5">
+                  {teamMembers.slice(0, 4).map((member) => (
+                    <Avatar key={member.id} className="w-5 h-5 border-[1.5px] border-background" title={member.nome}>
+                      <AvatarImage src={member.foto_perfil || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-[8px]">
+                        {member.nome.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   ))}
+                  {teamMembers.length > 4 && (
+                    <div className="w-5 h-5 rounded-full bg-muted border-[1.5px] border-background flex items-center justify-center text-[8px] text-muted-foreground font-medium">
+                      +{teamMembers.length - 4}
+                    </div>
+                  )}
                 </div>
               )}
-              <Button
-                onClick={() => navigate(`/board/${board.id}`)}
-                size="sm"
-                className="hover:scale-105 transition-transform"
-              >
-                Abrir
-              </Button>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
           </div>
         </CardContent>
       </Card>
-
-      <EditBoardDialog
-        board={board}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onUpdated={onDeleted}
-      />
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O bloco "{board.titulo}" e todas as suas tarefas serão excluídos permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {deleting ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {editDialog}
+      {deleteConfirmDialog}
     </>
   );
 };
