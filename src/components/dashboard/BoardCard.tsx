@@ -334,12 +334,8 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           {/* Header */}
           <div className="flex justify-between items-start gap-2 mb-3">
             <div className="flex items-start gap-2.5 flex-1 min-w-0">
-              <div className="w-9 h-9 rounded-[4px] bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                {board.publico ? (
-                  <Globe className="w-4.5 h-4.5 text-primary" />
-                ) : (
-                  <Lock className="w-4.5 h-4.5 text-muted-foreground" />
-                )}
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <BoardIcon className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-foreground truncate leading-tight text-base">
