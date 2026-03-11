@@ -13,6 +13,7 @@ import ListView from "@/components/board/ListView";
 import CommentsSection from "@/components/board/CommentsSection";
 import { BegIAChat } from "@/components/board/BegIAChat";
 import WhatsAppBroadcast from "@/components/board/WhatsAppBroadcast";
+import BoardPeopleSection from "@/components/board/BoardPeopleSection";
 import { notificationService } from "@/services/notificationService";
 import ReactMarkdown from "react-markdown";
 import logoBEG from "@/assets/logoBEG.png";
