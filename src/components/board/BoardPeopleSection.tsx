@@ -29,7 +29,33 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [editingPhone, setEditingPhone] = useState<string | null>(null);
+  const [phoneValue, setPhoneValue] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
   const { toast } = useToast();
+
+  const startEditPhone = (member: Profile) => {
+    setEditingPhone(member.id);
+    setPhoneValue(member.telefone || "");
+  };
+
+  const savePhone = async (userId: string) => {
+    setSavingPhone(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ telefone: phoneValue })
+        .eq("id", userId);
+      if (error) throw error;
+      toast({ title: "Telefone atualizado" });
+      setEditingPhone(null);
+      fetchMembers();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   useEffect(() => {
     fetchMembers();
