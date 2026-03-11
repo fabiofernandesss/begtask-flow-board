@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { SendIcon, Sparkles, Trash2, X } from 'lucide-react';
+import { SendIcon, Sparkles, Trash2, X, ArrowUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,11 +40,10 @@ function TypingDots() {
       {[1, 2, 3].map((dot) => (
         <motion.div
           key={dot}
-          className="w-1.5 h-1.5 bg-white/90 rounded-full mx-0.5"
+          className="w-1.5 h-1.5 bg-primary rounded-full mx-0.5"
           initial={{ opacity: 0.3 }}
           animate={{ opacity: [0.3, 0.9, 0.3], scale: [0.85, 1.1, 0.85] }}
           transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.15, ease: 'easeInOut' }}
-          style={{ boxShadow: '0 0 4px rgba(255, 255, 255, 0.3)' }}
         />
       ))}
     </div>
@@ -66,7 +64,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
   const [value, setValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 40, maxHeight: 140 });
+  const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 44, maxHeight: 140 });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -166,43 +164,38 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(value); }
   };
 
+  const hasContent = value.trim().length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] h-[85vh] max-h-[720px] flex flex-col p-0 gap-0 overflow-hidden border-0 bg-[#0a0a0f] text-white shadow-2xl shadow-primary/5 [&>button]:hidden">
-        
-        {/* Ambient background blurs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -left-20 w-72 h-72 bg-primary/8 rounded-full blur-[100px]" />
-          <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-indigo-500/8 rounded-full blur-[100px]" />
-          <div className="absolute top-1/3 right-1/4 w-48 h-48 bg-violet-500/5 rounded-full blur-[80px]" />
-        </div>
+      <DialogContent className="sm:max-w-[720px] h-[85vh] max-h-[720px] flex flex-col p-0 gap-0 overflow-hidden border border-border bg-background text-foreground shadow-2xl [&>button]:hidden rounded-2xl">
 
         {/* Header */}
-        <div className="relative z-10 flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/30 to-indigo-500/30 flex items-center justify-center backdrop-blur-sm border border-white/[0.08]">
-              <Sparkles className="w-4 h-4 text-white/90" />
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-4.5 h-4.5 text-primary" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white/90 tracking-tight">Beg IA</h2>
-              <p className="text-[11px] text-white/30">{boardTitle || 'Assistente do projeto'}</p>
+              <h2 className="text-sm font-semibold text-foreground tracking-tight">Beg IA</h2>
+              <p className="text-[11px] text-muted-foreground">{boardTitle || 'Assistente do projeto'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {messages.length > 0 && (
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 onClick={() => setMessages([])}
-                className="p-1.5 rounded-md text-white/25 hover:text-white/60 hover:bg-white/[0.05] transition-all"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
                 title="Limpar conversa"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
               </motion.button>
             )}
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={() => onOpenChange(false)}
-              className="p-1.5 rounded-md text-white/25 hover:text-white/60 hover:bg-white/[0.05] transition-all"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
             >
               <X className="w-4 h-4" />
             </motion.button>
@@ -210,7 +203,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
         </div>
 
         {/* Messages */}
-        <div className="relative z-10 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin scrollbar-thumb-white/10">
+        <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-thin scrollbar-thumb-border">
           {messages.length === 0 ? (
             <motion.div
               className="flex flex-col items-center justify-center h-full text-center space-y-8"
@@ -223,21 +216,21 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-indigo-500/20 flex items-center justify-center backdrop-blur-sm border border-white/[0.06]"
+                  className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center"
                 >
-                  <Sparkles className="w-7 h-7 text-white/70" />
+                  <Sparkles className="w-7 h-7 text-primary" />
                 </motion.div>
                 <div>
-                  <h3 className="text-xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/40">
+                  <h3 className="text-xl font-medium tracking-tight text-foreground">
                     Como posso ajudar?
                   </h3>
-                  <motion.div 
-                    className="h-px mx-auto mt-2 bg-gradient-to-r from-transparent via-white/15 to-transparent"
+                  <motion.div
+                    className="h-px mx-auto mt-2 bg-gradient-to-r from-transparent via-border to-transparent"
                     initial={{ width: 0 }}
                     animate={{ width: '60%' }}
                     transition={{ delay: 0.4, duration: 0.6 }}
                   />
-                  <p className="text-xs text-white/30 mt-3">Pergunte sobre tarefas, prazos ou peça sugestões</p>
+                  <p className="text-xs text-muted-foreground mt-3">Pergunte sobre tarefas, prazos ou peça sugestões</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
@@ -245,7 +238,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                   <motion.button
                     key={i}
                     onClick={() => sendMessage(s.prompt)}
-                    className="text-left px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.05] hover:border-white/[0.12] transition-all backdrop-blur-sm"
+                    className="text-left px-3 py-2.5 rounded-xl border border-border bg-card text-xs text-muted-foreground hover:text-foreground hover:bg-muted hover:border-primary/30 transition-all"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + i * 0.08 }}
@@ -269,18 +262,18 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                     className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                   >
                     {msg.role === 'assistant' && (
-                      <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary/25 to-indigo-500/25 flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/[0.06]">
-                        <Sparkles className="w-3 h-3 text-white/70" />
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" />
                       </div>
                     )}
                     <div className={cn(
-                      'max-w-[80%] rounded-xl px-3.5 py-2.5',
+                      'max-w-[80%] rounded-2xl px-4 py-2.5',
                       msg.role === 'user'
-                        ? 'bg-primary/90 text-white'
-                        : 'bg-white/[0.04] border border-white/[0.06] text-white/80'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted border border-border text-foreground'
                     )}>
                       {msg.role === 'assistant' ? (
-                        <div className="text-sm prose prose-sm max-w-none prose-invert prose-p:text-white/80 prose-strong:text-white/90 prose-li:text-white/70 [&>p]:mb-1.5 [&>ul]:mt-1 [&>ol]:mt-1 prose-headings:text-white/90">
+                        <div className="text-sm prose prose-sm max-w-none prose-p:text-foreground prose-strong:text-foreground prose-li:text-muted-foreground [&>p]:mb-1.5 [&>ul]:mt-1 [&>ol]:mt-1 prose-headings:text-foreground">
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
                       ) : (
@@ -293,11 +286,11 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
 
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 justify-start">
-                  <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary/25 to-indigo-500/25 flex items-center justify-center flex-shrink-0 border border-white/[0.06]">
-                    <Sparkles className="w-3 h-3 text-white/70" />
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
                   </div>
-                  <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 flex items-center gap-2">
-                    <span className="text-xs text-white/40">Pensando</span>
+                  <div className="bg-muted border border-border rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Pensando</span>
                     <TypingDots />
                   </div>
                 </motion.div>
@@ -307,13 +300,9 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
           )}
         </div>
 
-        {/* Input area */}
-        <div className="relative z-10 border-t border-white/[0.06] p-4">
-          <motion.div
-            className="flex items-end gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-2 backdrop-blur-sm focus-within:border-primary/30 transition-colors"
-            initial={{ scale: 0.98 }}
-            animate={{ scale: 1 }}
-          >
+        {/* Input area — prompt-box style */}
+        <div className="border-t border-border p-3 bg-card">
+          <div className="rounded-2xl border border-border bg-background p-2 shadow-sm transition-all focus-within:border-primary/40 focus-within:shadow-md">
             <textarea
               ref={textareaRef}
               value={value}
@@ -321,25 +310,29 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
               onKeyDown={handleKeyDown}
               placeholder="Pergunte ao Beg IA..."
               disabled={isLoading}
-              className="flex-1 bg-transparent border-none text-sm text-white/90 placeholder:text-white/20 resize-none focus:outline-none px-2 py-1.5"
-              style={{ minHeight: 32, maxHeight: 120 }}
+              className="w-full bg-transparent border-none text-sm text-foreground placeholder:text-muted-foreground/60 resize-none focus:outline-none px-3 py-2"
+              style={{ minHeight: 44, maxHeight: 120 }}
             />
-            <motion.button
-              onClick={() => sendMessage(value)}
-              disabled={!value.trim() || isLoading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.96 }}
-              className={cn(
-                "h-8 px-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 shrink-0",
-                value.trim()
-                  ? "bg-white text-[#0a0a0f] shadow-lg shadow-white/10"
-                  : "bg-white/[0.06] text-white/30"
-              )}
-            >
-              <SendIcon className="w-3.5 h-3.5" />
-              <span>Enviar</span>
-            </motion.button>
-          </motion.div>
+            <div className="flex items-center justify-between pt-1 px-1">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground/50 px-2">Shift+Enter para nova linha</span>
+              </div>
+              <motion.button
+                onClick={() => sendMessage(value)}
+                disabled={!hasContent || isLoading}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                className={cn(
+                  "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-200",
+                  hasContent
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                <ArrowUp className="w-4 h-4" />
+              </motion.button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
