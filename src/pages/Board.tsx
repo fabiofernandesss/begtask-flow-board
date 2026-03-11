@@ -884,11 +884,12 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
+              <div className="flex items-center bg-muted/50 rounded-[4px] p-0.5">
                 <Button
                   variant={viewMode === "kanban" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("kanban")}
+                  className="h-8"
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </Button>
@@ -896,6 +897,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("list")}
+                  className="h-8"
                 >
                   <List className="w-4 h-4" />
                 </Button>
@@ -903,7 +905,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
 
               <Button
                 onClick={() => setColumnDialogOpen(true)}
-                className="gap-2"
+                className="gap-2 h-8"
                 size="sm"
               >
                 <Plus className="w-4 h-4" />
