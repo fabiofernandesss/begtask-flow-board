@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit, Users } from "lucide-react";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit, Users, Bell, BellOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
@@ -78,6 +80,7 @@ const Board = () => {
   const [taskParticipants, setTaskParticipants] = useState<TaskParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [autoNotify, setAutoNotify] = useState(true);
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
@@ -336,8 +339,8 @@ const Board = () => {
             await supabase.from("tasks").update({ posicao: task.posicao }).eq("id", task.id);
           }
 
-          // Enviar notificação para responsável e participantes da tarefa
-          try {
+          // Enviar notificação para responsável e participantes da tarefa (se toggle ativo)
+          if (autoNotify) try {
             console.log("🔄 Iniciando envio de notificações para tarefa:", movedTask.titulo);
             
             // Verificar sessão antes de enviar notificação
@@ -761,23 +764,38 @@ const Board = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
-                <Button
-                  variant={viewMode === "kanban" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("kanban")}
-                  className="h-8"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="h-8"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5">
+                  {autoNotify ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+                  <Label htmlFor="auto-notify" className="text-xs cursor-pointer whitespace-nowrap">
+                    Notificar
+                  </Label>
+                  <Switch
+                    id="auto-notify"
+                    checked={autoNotify}
+                    onCheckedChange={setAutoNotify}
+                    className="scale-90"
+                  />
+                </div>
+
+                <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
+                  <Button
+                    variant={viewMode === "kanban" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("kanban")}
+                    className="h-8"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="h-8"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               <Button
