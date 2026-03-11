@@ -204,6 +204,55 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
     }
   };
 
+  const syncAllMembersToTasks = async () => {
+    setSyncing(true);
+    try {
+      const { data: columns } = await supabase
+        .from("columns")
+        .select("id")
+        .eq("board_id", boardId);
+
+      if (!columns || columns.length === 0) {
+        toast({ title: "Sem colunas", description: "Este projeto não possui colunas ainda." });
+        return;
+      }
+
+      const { data: tasks } = await supabase
+        .from("tasks")
+        .select("id")
+        .in("column_id", columns.map((c) => c.id));
+
+      if (!tasks || tasks.length === 0) {
+        toast({ title: "Sem tarefas", description: "Este projeto não possui tarefas ainda." });
+        return;
+      }
+
+      let count = 0;
+      for (const member of members) {
+        for (const task of tasks) {
+          await supabase
+            .from("task_participants")
+            .upsert(
+              { task_id: task.id, user_id: member.id, role: "participant" },
+              { onConflict: "task_id,user_id", ignoreDuplicates: true }
+            )
+            .select();
+          count++;
+        }
+      }
+
+      toast({
+        title: "Tarefas atualizadas",
+        description: `${members.length} membro(s) sincronizado(s) em ${tasks.length} tarefa(s).`,
+      });
+      onMembersChanged?.();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const memberIds = new Set(members.map((m) => m.id));
   const availableUsers = allUsers.filter(
     (u) => !memberIds.has(u.id) && (
