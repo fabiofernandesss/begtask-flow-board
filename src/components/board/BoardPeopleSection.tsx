@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, Trash2, Search, Loader2, Users } from "lucide-react";
+import { UserPlus, Trash2, Search, Loader2, Users, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -203,6 +204,55 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
     }
   };
 
+  const syncAllMembersToTasks = async () => {
+    setSyncing(true);
+    try {
+      const { data: columns } = await supabase
+        .from("columns")
+        .select("id")
+        .eq("board_id", boardId);
+
+      if (!columns || columns.length === 0) {
+        toast({ title: "Sem colunas", description: "Este projeto não possui colunas ainda." });
+        return;
+      }
+
+      const { data: tasks } = await supabase
+        .from("tasks")
+        .select("id")
+        .in("column_id", columns.map((c) => c.id));
+
+      if (!tasks || tasks.length === 0) {
+        toast({ title: "Sem tarefas", description: "Este projeto não possui tarefas ainda." });
+        return;
+      }
+
+      let count = 0;
+      for (const member of members) {
+        for (const task of tasks) {
+          await supabase
+            .from("task_participants")
+            .upsert(
+              { task_id: task.id, user_id: member.id, role: "participant" },
+              { onConflict: "task_id,user_id", ignoreDuplicates: true }
+            )
+            .select();
+          count++;
+        }
+      }
+
+      toast({
+        title: "Tarefas atualizadas",
+        description: `${members.length} membro(s) sincronizado(s) em ${tasks.length} tarefa(s).`,
+      });
+      onMembersChanged?.();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const memberIds = new Set(members.map((m) => m.id));
   const availableUsers = allUsers.filter(
     (u) => !memberIds.has(u.id) && (
@@ -221,10 +271,24 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
           <div className="w-9 h-9 rounded-full bg-[hsl(271,76%,44%)] flex items-center justify-center">
             <Users className="w-4 h-4 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-semibold text-foreground">Membros do Projeto</h3>
             <p className="text-sm text-muted-foreground">{members.length} pessoa(s)</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncAllMembersToTasks}
+            disabled={syncing || members.length === 0}
+            className="gap-1.5"
+          >
+            {syncing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+            Atualizar Tarefas
+          </Button>
         </div>
 
         {loading ? (
