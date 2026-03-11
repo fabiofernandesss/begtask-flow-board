@@ -876,6 +876,13 @@ const Board = () => {
             />
           </TabsContent>
 
+          <TabsContent value="people" className="mt-0">
+            <BoardPeopleSection
+              boardId={id!}
+              onMembersChanged={fetchBoardData}
+            />
+          </TabsContent>
+
           <TabsContent value="whatsapp" className="mt-0">
             <WhatsAppBroadcast 
               boardId={id!}
