@@ -85,7 +85,7 @@ All colors MUST be HSL.
     --sidebar-ring: 214 100% 41%;
 
     /* Gradients - Ciano → Azul → Roxo */
-    --gradient-primary: linear-gradient(90deg, hsl(187 100% 50%) 0%, hsl(214 100% 41%) 40%, hsl(271 76% 53%) 75%, hsl(293 100% 49%) 100%);
+    --gradient-primary: linear-gradient(90deg, hsl(187 100% 50%) 0%, hsl(214 100% 26%) 40%, hsl(271 76% 44%) 75%, hsl(293 100% 49%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(214 20% 98%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(214 20% 99%) 100%);
 
@@ -178,7 +178,7 @@ All colors MUST be HSL.
     --sidebar-ring: 214 100% 50%;
 
     /* Gradients - Ciano → Azul → Roxo */
-    --gradient-primary: linear-gradient(90deg, hsl(187 100% 50%) 0%, hsl(214 100% 50%) 40%, hsl(271 76% 58%) 75%, hsl(293 100% 54%) 100%);
+    --gradient-primary: linear-gradient(90deg, hsl(187 100% 50%) 0%, hsl(214 100% 30%) 40%, hsl(271 76% 48%) 75%, hsl(293 100% 54%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 11%) 0%, hsl(0 0% 13%) 100%);
 
