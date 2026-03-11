@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight, Columns3, ListChecks, Users, LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag } from "lucide-react";
+import { Trash2, Lock, Globe, Calendar, Edit, Columns3, ListChecks, Users, LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EditBoardDialog from "./EditBoardDialog";
 import { notificationService } from "@/services/notificationService";
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface BoardCardProps {
   board: {
@@ -47,19 +48,6 @@ interface BoardStats {
 
 const BOARD_ICONS = [LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag];
 
-const BOARD_COLORS = [
-  "from-blue-500/20 to-cyan-500/20",
-  "from-violet-500/20 to-purple-500/20", 
-  "from-emerald-500/20 to-teal-500/20",
-  "from-orange-500/20 to-amber-500/20",
-  "from-rose-500/20 to-pink-500/20",
-  "from-indigo-500/20 to-blue-500/20",
-  "from-cyan-500/20 to-sky-500/20",
-  "from-fuchsia-500/20 to-pink-500/20",
-  "from-lime-500/20 to-green-500/20",
-  "from-amber-500/20 to-yellow-500/20",
-];
-
 const ICON_COLORS = [
   "text-blue-600",
   "text-violet-600",
@@ -71,6 +59,19 @@ const ICON_COLORS = [
   "text-fuchsia-600",
   "text-lime-600",
   "text-amber-600",
+];
+
+const ICON_BG = [
+  "bg-blue-500/10",
+  "bg-violet-500/10",
+  "bg-emerald-500/10",
+  "bg-orange-500/10",
+  "bg-rose-500/10",
+  "bg-indigo-500/10",
+  "bg-cyan-500/10",
+  "bg-fuchsia-500/10",
+  "bg-lime-500/10",
+  "bg-amber-500/10",
 ];
 
 const getBoardHash = (boardId: string) => {
@@ -90,8 +91,8 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
   const [stats, setStats] = useState<BoardStats>({ columnsCount: 0, tasksCount: 0 });
   const hashIndex = getBoardHash(board.id);
   const BoardIcon = BOARD_ICONS[hashIndex];
-  const boardColor = BOARD_COLORS[hashIndex];
   const iconColor = ICON_COLORS[hashIndex];
+  const iconBg = ICON_BG[hashIndex];
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -267,19 +268,19 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
     />
   );
 
-  const avatarGroup = (maxVisible: number, size: string, borderClass: string) => (
+  const avatarGroup = (maxVisible: number) => (
     teamMembers.length > 0 ? (
-      <div className="flex -space-x-2">
+      <div className="flex -space-x-1.5">
         {teamMembers.slice(0, maxVisible).map((member) => (
-          <Avatar key={member.id} className={cn(size, borderClass)} title={member.nome}>
+          <Avatar key={member.id} className="w-6 h-6 border-2 border-card" title={member.nome}>
             <AvatarImage src={member.foto_perfil || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+            <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-semibold">
               {member.nome.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         ))}
         {teamMembers.length > maxVisible && (
-          <div className={cn(size, "rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-bold", borderClass)}>
+          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[9px] text-muted-foreground font-bold border-2 border-card">
             +{teamMembers.length - maxVisible}
           </div>
         )}
@@ -287,183 +288,160 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
     ) : null
   );
 
+  // LIST VIEW
   if (viewMode === "list") {
     return (
       <>
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
           className={cn(
-            "relative overflow-hidden rounded-[4px] border border-border/60 bg-card",
-            "group/card hover:border-primary/40 hover:shadow-md transition-all duration-300"
+            "rounded-[4px] border border-border bg-card",
+            "group/card hover:border-primary/30 hover:shadow-sm transition-all duration-200"
           )}
         >
-          {/* Gradient accent top */}
-          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
-
-          <div className="flex items-center gap-4 px-5 py-4">
-            {/* Icon */}
-            <div className={cn("w-11 h-11 rounded-lg bg-gradient-to-br flex items-center justify-center flex-shrink-0", boardColor)}>
-              <BoardIcon className={cn("w-5 h-5", iconColor)} />
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className={cn("w-8 h-8 rounded-[4px] flex items-center justify-center flex-shrink-0", iconBg)}>
+              <BoardIcon className={cn("w-4 h-4", iconColor)} />
             </div>
 
-            {/* Info */}
             <div
               className="flex-1 min-w-0 cursor-pointer"
               onClick={() => navigate(`/board/${board.id}`)}
             >
-              <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="font-bold text-foreground truncate text-[15px]">{board.titulo}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-foreground truncate text-sm">{board.titulo}</h3>
                 {board.publico ? (
-                  <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                  <Globe className="w-3 h-3 text-primary flex-shrink-0" />
                 ) : (
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  <Lock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 )}
               </div>
-              {board.descricao && (
-                <p className="text-[13px] text-muted-foreground line-clamp-1">{board.descricao}</p>
-              )}
             </div>
 
-            {/* Stats pills */}
-            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
+            <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
+              <span className="flex items-center gap-1">
                 <Columns3 className="w-3 h-3" />
-                <span className="font-semibold">{stats.columnsCount}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
+                {stats.columnsCount}
+              </span>
+              <span className="flex items-center gap-1">
                 <ListChecks className="w-3 h-3" />
-                <span className="font-semibold">{stats.tasksCount}</span>
-              </div>
+                {stats.tasksCount}
+              </span>
             </div>
 
-            {/* Date */}
-            <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1.5 flex-shrink-0">
-              <Calendar className="w-3.5 h-3.5" />
+            <span className="text-[11px] text-muted-foreground hidden sm:block flex-shrink-0">
               {format(new Date(board.created_at), "dd MMM yyyy", { locale: ptBR })}
             </span>
 
-            {/* Avatars */}
-            {avatarGroup(3, "w-7 h-7", "border-2 border-card")}
+            {avatarGroup(3)}
 
-            {/* Actions */}
             <div className="flex items-center gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity flex-shrink-0">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditDialogOpen(true)}>
-                <Edit className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditDialogOpen(true)}>
+                <Edit className="w-3 h-3" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeleteDialogOpen(true)}>
-                <Trash2 className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeleteDialogOpen(true)}>
+                <Trash2 className="w-3 h-3" />
               </Button>
             </div>
           </div>
-        </div>
+        </motion.div>
         {editDialog}
         {deleteConfirmDialog}
       </>
     );
   }
 
-  // Grid view
+  // GRID VIEW — compact, minimalist
   return (
     <>
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -2 }}
+        transition={{ duration: 0.2 }}
         className={cn(
-          "relative overflow-hidden rounded-[4px] border border-border/60 bg-card cursor-pointer",
-          "group/card transition-all duration-300",
-          "hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5"
+          "rounded-[4px] border border-border bg-card cursor-pointer",
+          "group/card transition-shadow duration-200",
+          "hover:shadow-md hover:border-primary/20"
         )}
         onClick={() => navigate(`/board/${board.id}`)}
       >
-        {/* Animated top gradient bar */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover/card:opacity-100 transition-all duration-500" />
-
-        {/* Icon banner area */}
-        <div className={cn("relative bg-gradient-to-br px-6 pt-6 pb-4", boardColor)}>
-          <div className="flex justify-between items-start">
-            <div className="w-14 h-14 rounded-xl bg-background/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-              <BoardIcon className={cn("w-7 h-7", iconColor)} />
+        <div className="p-4">
+          {/* Header: icon + actions */}
+          <div className="flex items-start justify-between mb-3">
+            <div className={cn("w-9 h-9 rounded-[4px] flex items-center justify-center", iconBg)}>
+              <BoardIcon className={cn("w-[18px] h-[18px]", iconColor)} />
             </div>
-            <div className="flex gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
+            <div className="flex gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 bg-background/50 hover:bg-background/80"
+                className="h-7 w-7"
                 onClick={(e) => { e.stopPropagation(); setEditDialogOpen(true); }}
               >
-                <Edit className="w-3.5 h-3.5" />
+                <Edit className="w-3 h-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 bg-background/50 hover:bg-destructive/20 hover:text-destructive"
+                className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
                 onClick={(e) => { e.stopPropagation(); setDeleteDialogOpen(true); }}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3 h-3" />
               </Button>
             </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="px-6 pt-4 pb-5">
-          {/* Title & visibility */}
-          <div className="flex items-start gap-2 mb-2">
-            <h3 className="font-bold text-foreground text-lg leading-snug line-clamp-2 flex-1">
+          {/* Title + visibility */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 flex-1">
               {board.titulo}
             </h3>
             {board.publico ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                <Globe className="w-3 h-3" /> Público
-              </span>
+              <Globe className="w-3 h-3 text-primary flex-shrink-0" />
             ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full flex-shrink-0">
-                <Lock className="w-3 h-3" /> Privado
-              </span>
+              <Lock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
             )}
           </div>
 
           {/* Description */}
           {board.descricao ? (
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-4">
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3">
               {board.descricao}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground/50 italic mb-4">Sem descrição</p>
+            <p className="text-xs text-muted-foreground/40 italic mb-3">Sem descrição</p>
           )}
 
-          {/* Stats row */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center gap-1.5 text-sm">
-              <Columns3 className="w-4 h-4 text-muted-foreground" />
-              <span className="font-bold text-foreground">{stats.columnsCount}</span>
-              <span className="text-muted-foreground text-xs">coluna{stats.columnsCount !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-border" />
-            <div className="flex items-center gap-1.5 text-sm">
-              <ListChecks className="w-4 h-4 text-muted-foreground" />
-              <span className="font-bold text-foreground">{stats.tasksCount}</span>
-              <span className="text-muted-foreground text-xs">tarefa{stats.tasksCount !== 1 ? 's' : ''}</span>
-            </div>
+          {/* Stats */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+            <span className="flex items-center gap-1">
+              <Columns3 className="w-3 h-3" />
+              <span className="font-medium text-foreground">{stats.columnsCount}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <ListChecks className="w-3 h-3" />
+              <span className="font-medium text-foreground">{stats.tasksCount}</span>
+            </span>
             {teamMembers.length > 0 && (
-              <>
-                <div className="w-1 h-1 rounded-full bg-border" />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-bold text-foreground">{teamMembers.length}</span>
-                </div>
-              </>
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                <span className="font-medium text-foreground">{teamMembers.length}</span>
+              </span>
             )}
           </div>
 
           {/* Footer: avatars + date */}
-          <div className="flex justify-between items-center pt-3 border-t border-border/40">
-            {avatarGroup(5, "w-8 h-8", "border-2 border-card") || <div />}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{format(new Date(board.created_at), "dd MMM yyyy", { locale: ptBR })}</span>
-              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover/card:text-primary group-hover/card:translate-x-0.5 transition-all duration-300" />
-            </div>
+          <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            {avatarGroup(4) || <div />}
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {format(new Date(board.created_at), "dd MMM", { locale: ptBR })}
+            </span>
           </div>
         </div>
-      </div>
+      </motion.div>
       {editDialog}
       {deleteConfirmDialog}
     </>
