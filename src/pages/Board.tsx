@@ -750,7 +750,7 @@ const Board = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
-              <img src={logoBEG} alt="BEG Inovação" className="h-14" />
+              <img src={logoBEG} alt="BEG Inovação" className="h-20 -my-3" />
               <div>
                 <h1 className="text-xl font-bold text-foreground">{board?.titulo}</h1>
                 {board?.descricao && (
