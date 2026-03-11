@@ -263,7 +263,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                   >
                     {msg.role === 'assistant' && (
                       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        <BrainCircuit className="w-3.5 h-3.5 text-primary" />
                       </div>
                     )}
                     <div className={cn(
