@@ -107,11 +107,25 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
       const chatHistory = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
       const boardContext = getBoardContext();
 
-      const { data, error } = await supabase.functions.invoke('deepseek-chat', {
-        body: { messages: chatHistory, boardContext },
+      // Use direct fetch for streaming support (supabase.functions.invoke buffers the response)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(`${supabaseUrl}/functions/v1/deepseek-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ messages: chatHistory, boardContext }),
       });
 
-      if (error) throw new Error(error.message || 'Erro ao chamar Beg IA');
+      if (!resp.ok) {
+        const errText = await resp.text();
+        let errMsg = `Erro ${resp.status}`;
+        try { errMsg = JSON.parse(errText).error || errMsg; } catch {}
+        throw new Error(errMsg);
+      }
 
       let assistantText = '';
       const assistantId = (Date.now() + 1).toString();
@@ -127,30 +141,32 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
         });
       };
 
-      if (data instanceof Blob) {
-        const text = await data.text();
-        // Check if it's an error JSON
-        try {
-          const errorJson = JSON.parse(text);
-          if (errorJson.error) throw new Error(errorJson.error);
-        } catch (e) {
-          if (e instanceof SyntaxError) { /* not JSON, continue parsing SSE */ } else throw e;
-        }
-        const lines = text.split('\n');
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith(':') || !trimmed.startsWith('data: ')) continue;
-          const jsonStr = trimmed.slice(6).trim();
+      // Parse SSE stream
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error('Stream indisponível');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
           if (jsonStr === '[DONE]') break;
           try {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsert(content);
-          } catch { /* skip */ }
+          } catch { /* skip partial */ }
         }
-      } else if (typeof data === 'object' && data?.choices) {
-        const content = data.choices[0]?.message?.content;
-        if (content) upsert(content);
       }
 
       if (!assistantText) {
