@@ -13,7 +13,7 @@ All colors MUST be HSL.
   :root {
     /* Base colors */
     --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --foreground: 220 20% 10%;
 
     /* Card */
     --card: 220 20% 97%;
@@ -23,27 +23,31 @@ All colors MUST be HSL.
     --popover: 220 20% 95%;
     --popover-foreground: 220 20% 10%;
 
-    /* Primary - BEG Blue */
-    --primary: 214 98% 33%;
+    /* Primary - Azul Royal Vibrante #0056D2 */
+    --primary: 214 100% 41%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 98% 26%;
-    --primary-light: 214 98% 96%;
+    --primary-hover: 214 100% 34%;
+    --primary-light: 214 100% 96%;
 
-    /* Accent - BEG Purple from logo */
-    --accent-gold: 280 70% 50%;
-    --accent-gold-foreground: 0 0% 100%;
+    /* Accent Cyan - #00E5FF */
+    --accent-cyan: 187 100% 50%;
+    --accent-cyan-foreground: 220 20% 10%;
+
+    /* Accent Purple - #A100FF */
+    --accent-purple: 272 100% 50%;
+    --accent-purple-foreground: 0 0% 100%;
 
     /* Secondary */
-    --secondary: 220 15% 40%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 15% 30%;
 
     /* Muted */
     --muted: 220 15% 92%;
     --muted-foreground: 220 15% 40%;
 
     /* Accent */
-    --accent: 47 100% 96%;
-    --accent-foreground: 37 92% 50%;
+    --accent: 187 100% 96%;
+    --accent-foreground: 187 100% 30%;
 
     /* Destructive */
     --destructive: 0 72% 50%;
@@ -65,7 +69,7 @@ All colors MUST be HSL.
     /* Border and input */
     --border: 220 15% 90%;
     --input: 220 15% 90%;
-    --ring: 214 98% 33%;
+    --ring: 214 100% 41%;
 
     /* Radius - compact design */
     --radius: 4px;
@@ -73,15 +77,15 @@ All colors MUST be HSL.
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 20% 10%;
-    --sidebar-primary: 214 98% 33%;
+    --sidebar-primary: 214 100% 41%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 40%;
-    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-accent: 187 100% 50%;
+    --sidebar-accent-foreground: 220 20% 10%;
     --sidebar-border: 220 15% 90%;
-    --sidebar-ring: 214 98% 33%;
+    --sidebar-ring: 214 100% 41%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(214 98% 33%) 0%, hsl(214 98% 43%) 100%);
+    /* Gradients - Ciano → Azul → Roxo */
+    --gradient-primary: linear-gradient(135deg, hsl(187 100% 50%) 0%, hsl(214 100% 41%) 50%, hsl(272 100% 50%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(214 20% 98%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(214 20% 99%) 100%);
 
@@ -89,17 +93,17 @@ All colors MUST be HSL.
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 2px 8px hsl(214 98% 33% / 0.08);
-    --shadow-hover: 0 8px 24px hsl(214 98% 33% / 0.12);
+    --shadow-card: 0 2px 8px hsl(214 100% 41% / 0.08);
+    --shadow-hover: 0 8px 24px hsl(214 100% 41% / 0.12);
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --chart-1: 27 95% 60%;
-    --chart-2: 43 96% 56%;
-    --chart-3: 47 95% 53%;
-    --chart-4: 24 94% 53%;
-    --chart-5: 0 0% 45%;
+    --chart-1: 187 100% 50%;
+    --chart-2: 214 100% 41%;
+    --chart-3: 272 100% 50%;
+    --chart-4: 214 100% 55%;
+    --chart-5: 187 100% 35%;
     --sidebar: 0 0% 98%;
     --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-serif: 'Libre Caslon Text', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
