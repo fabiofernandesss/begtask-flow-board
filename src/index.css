@@ -16,12 +16,12 @@ All colors MUST be HSL.
     --foreground: 0 0% 9%;
 
     /* Card */
-    --card: 0 0% 96%;
-    --card-foreground: 0 0% 9%;
+    --card: 220 20% 97%;
+    --card-foreground: 220 20% 10%;
 
     /* Popover */
-    --popover: 0 0% 89%;
-    --popover-foreground: 0 0% 9%;
+    --popover: 220 20% 95%;
+    --popover-foreground: 220 20% 10%;
 
     /* Primary - BEG Blue */
     --primary: 214 98% 33%;
@@ -34,12 +34,12 @@ All colors MUST be HSL.
     --accent-gold-foreground: 0 0% 100%;
 
     /* Secondary */
-    --secondary: 0 0% 32%;
+    --secondary: 220 15% 40%;
     --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 0 0% 63%;
-    --muted-foreground: 0 0% 9%;
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 15% 40%;
 
     /* Accent */
     --accent: 47 100% 96%;
@@ -63,8 +63,8 @@ All colors MUST be HSL.
     --priority-alta: 0 84% 60%;
 
     /* Border and input */
-    --border: 0 0% 83%;
-    --input: 0 0% 83%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
     --ring: 214 98% 33%;
 
     /* Radius - compact design */
@@ -72,12 +72,12 @@ All colors MUST be HSL.
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 9%;
+    --sidebar-foreground: 220 20% 10%;
     --sidebar-primary: 214 98% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 32%;
+    --sidebar-accent: 220 15% 40%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 83%;
+    --sidebar-border: 220 15% 90%;
     --sidebar-ring: 214 98% 33%;
 
     /* Gradients */
