@@ -183,7 +183,7 @@ const Dashboard = () => {
                 </p>
                 <Button
                   onClick={() => setCreateDialogOpen(true)}
-                  className="gap-2 gradient-primary"
+                  className="gap-2"
                 >
                   <Plus className="w-5 h-5" />
                   Criar Primeiro Bloco
