@@ -17,10 +17,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "px-5 py-2",
-        sm: "px-4 text-xs",
-        lg: "px-8 text-base",
-        icon: "w-[45px] p-0",
+        default: "px-4 py-2",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-10 px-6 text-base",
+        icon: "h-9 w-9 p-0",
       },
     },
     defaultVariants: {
