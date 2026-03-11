@@ -905,112 +905,21 @@ const Board = () => {
       {/* Floating Chat Button */}
       <Button
         onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50 gap-0"
         size="icon"
       >
-        <MessageCircle className="h-6 w-6" />
+        <Sparkles className="h-6 w-6" />
       </Button>
 
-      {/* Chat Modal */}
-      <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-        <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col p-0">
-          <DialogHeader className="p-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              Assistente IA - {board?.titulo}
-            </DialogTitle>
-            <DialogDescription>
-              Converse com a IA sobre seu projeto
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {chatHistory.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Olá! Sou seu assistente de IA.</p>
-                <p>Como posso ajudar com seu projeto hoje?</p>
-              </div>
-            ) : (
-              chatHistory.map((message: any) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    message.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  {message.sender === "ai" && (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-primary" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender === "user"
-                        ? "bg-primary text-primary-foreground ml-auto"
-                        : "bg-muted"
-                    }`}
-                  >
-                    {message.sender === "ai" ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="text-sm">{message.content}</p>
-                    )}
-                  </div>
-                  {message.sender === "user" && (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-            {isLoading && (
-              <div className="flex gap-3 justify-start">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-primary" />
-                </div>
-                <div className="bg-muted rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Pensando...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Chat Input */}
-          <div className="p-4 border-t">
-            <div className="flex gap-2">
-              <Textarea
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                  }
-                }}
-              />
-              <Button
-                onClick={sendChatMessage}
-                disabled={!chatMessage.trim() || isLoading}
-                size="icon"
-                className="h-10 w-10"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Beg IA Chat Modal */}
+      <BegIAChat
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        boardId={id!}
+        boardTitle={board?.titulo}
+        columns={columns}
+        teamMembers={teamMembers}
+      />
     </div>
   );
 };
