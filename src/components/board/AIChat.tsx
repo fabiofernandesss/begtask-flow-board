@@ -47,7 +47,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   const loadMessages = async () => {
     try {
       const { data: messagesData, error } = await supabase
-        .from('board_messages' as any)
+        .from('board_messages')
         .select('id, message_content, sender_type, sender_name, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: true });
@@ -74,7 +74,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   const saveMessage = async (content: string, senderType: 'user' | 'ai') => {
     try {
       const { error } = await supabase
-        .from('board_messages' as any)
+        .from('board_messages')
         .insert({
           board_id: boardId,
           sender_type: senderType,
@@ -113,7 +113,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         .in('column_id', columnIds.length > 0 ? columnIds : ['none']);
 
       const { data: commentsData } = await supabase
-        .from('board_comments' as any)
+        .from('board_comments')
         .select('id, author_name, content, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: false })
