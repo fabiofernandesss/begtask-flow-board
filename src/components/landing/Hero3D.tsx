@@ -63,7 +63,7 @@ const Hero3D = () => {
 
         ctx.beginPath();
         ctx.arc(x2d, y2d, size2d, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(129, 35, 197, ${opacity * 0.6})`;
+        ctx.fillStyle = `rgba(1, 74, 166, ${opacity * 0.4})`;
         ctx.fill();
       }
     }
