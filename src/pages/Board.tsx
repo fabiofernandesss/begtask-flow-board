@@ -275,12 +275,12 @@ const Board = () => {
       setColumns(updated);
 
       try {
-        for (const col of updated) {
-          await supabase
-            .from("columns")
-            .update({ posicao: col.posicao })
-            .eq("id", col.id);
-        }
+        // Use Promise.all for atomic update
+        await Promise.all(
+          updated.map(col =>
+            supabase.from("columns").update({ posicao: col.posicao }).eq("id", col.id)
+          )
+        );
       } catch (error: any) {
         toast({
           title: "Erro ao reordenar colunas",
