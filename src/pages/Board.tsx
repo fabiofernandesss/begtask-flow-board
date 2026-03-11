@@ -85,19 +85,7 @@ const Board = () => {
   
   // Chat states
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatMessage, setChatMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
-  const [boardMessages, setBoardMessages] = useState<Array<{
-    id: string;
-    sender_type: 'client' | 'internal' | 'ai';
-    sender_name: string;
-    message_content: string;
-    created_at: string;
-  }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Ref para auto-scroll do chat
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     checkAuth();
