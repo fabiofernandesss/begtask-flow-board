@@ -760,7 +760,7 @@ const Board = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-muted/50 rounded-[4px] p-0.5">
+              <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
                 <Button
                   variant={viewMode === "kanban" ? "default" : "ghost"}
                   size="sm"
