@@ -70,7 +70,7 @@ const Hero3D = () => {
 
     // Create particles
     const particles: Particle[] = [];
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 60; i++) {
       particles.push(new Particle());
     }
 
