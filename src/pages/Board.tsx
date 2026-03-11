@@ -946,10 +946,13 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                           key={column.id}
                           column={column}
                           index={index}
+                          totalColumns={columns.length}
                           onDelete={handleDeleteColumn}
                           onDeleteTask={handleDeleteTask}
                           onTaskClick={handleTaskClick}
                           onTaskCreated={fetchBoardData}
+                          onMoveColumn={handleMoveColumn}
+                          onRenameColumn={handleRenameColumn}
                           teamMembers={teamMembers}
                           taskParticipants={taskParticipants}
                         />
