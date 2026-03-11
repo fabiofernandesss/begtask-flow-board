@@ -16,12 +16,12 @@ All colors MUST be HSL.
     --foreground: 0 0% 9%;
 
     /* Card */
-    --card: 0 0% 96%;
-    --card-foreground: 0 0% 9%;
+    --card: 220 20% 97%;
+    --card-foreground: 220 20% 10%;
 
     /* Popover */
-    --popover: 0 0% 89%;
-    --popover-foreground: 0 0% 9%;
+    --popover: 220 20% 95%;
+    --popover-foreground: 220 20% 10%;
 
     /* Primary - BEG Blue */
     --primary: 214 98% 33%;
