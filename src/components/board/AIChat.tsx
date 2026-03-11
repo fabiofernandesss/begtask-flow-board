@@ -113,7 +113,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         .in('column_id', columnIds.length > 0 ? columnIds : ['none']);
 
       const { data: commentsData } = await supabase
-        .from('board_comments' as any)
+        .from('board_comments')
         .select('id, author_name, content, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: false })
