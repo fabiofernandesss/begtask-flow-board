@@ -296,12 +296,12 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            "rounded-[4px] border border-border bg-card",
+            "rounded-lg border border-border bg-card",
             "group/card hover:border-primary/30 hover:shadow-sm transition-all duration-200"
           )}
         >
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className={cn("w-8 h-8 rounded-[4px] flex items-center justify-center flex-shrink-0", iconBg)}>
+            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", iconBg)}>
               <BoardIcon className={cn("w-4 h-4", iconColor)} />
             </div>
 
@@ -361,7 +361,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          "rounded-[4px] border border-border bg-card cursor-pointer",
+          "rounded-lg border border-border bg-card cursor-pointer",
           "group/card transition-shadow duration-200",
           "hover:shadow-md hover:border-primary/20"
         )}
@@ -370,7 +370,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         <div className="p-4">
           {/* Header: icon + actions */}
           <div className="flex items-start justify-between mb-3">
-            <div className={cn("w-9 h-9 rounded-[4px] flex items-center justify-center", iconBg)}>
+            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", iconBg)}>
               <BoardIcon className={cn("w-[18px] h-[18px]", iconColor)} />
             </div>
             <div className="flex gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity">

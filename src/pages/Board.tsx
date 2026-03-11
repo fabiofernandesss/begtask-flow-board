@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
@@ -760,7 +760,7 @@ const Board = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-muted/50 rounded-[4px] p-0.5">
+              <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
                 <Button
                   variant={viewMode === "kanban" ? "default" : "ghost"}
                   size="sm"
@@ -900,7 +900,7 @@ const Board = () => {
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50 gap-0"
         size="icon"
       >
-        <Sparkles className="h-6 w-6" />
+        <BrainCircuit className="h-6 w-6" />
       </Button>
 
       {/* Beg IA Chat Modal */}

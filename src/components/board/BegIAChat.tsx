@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { SendIcon, Sparkles, Trash2, X, ArrowUp } from 'lucide-react';
+import { SendIcon, BrainCircuit, Trash2, X, ArrowUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -174,7 +174,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5 text-primary" />
+              <BrainCircuit className="w-4.5 h-4.5 text-primary" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground tracking-tight">Beg IA</h2>
@@ -218,7 +218,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                   transition={{ delay: 0.1 }}
                   className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center"
                 >
-                  <Sparkles className="w-7 h-7 text-primary" />
+                  <BrainCircuit className="w-7 h-7 text-primary" />
                 </motion.div>
                 <div>
                   <h3 className="text-xl font-medium tracking-tight text-foreground">
@@ -263,7 +263,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                   >
                     {msg.role === 'assistant' && (
                       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        <BrainCircuit className="w-3.5 h-3.5 text-primary" />
                       </div>
                     )}
                     <div className={cn(
@@ -287,7 +287,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 justify-start">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <BrainCircuit className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div className="bg-muted border border-border rounded-2xl px-4 py-2.5 flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Pensando</span>
