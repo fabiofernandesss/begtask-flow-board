@@ -370,7 +370,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         <div className="p-4">
           {/* Header: icon + actions */}
           <div className="flex items-start justify-between mb-3">
-            <div className={cn("w-9 h-9 rounded-[4px] flex items-center justify-center", iconBg)}>
+            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", iconBg)}>
               <BoardIcon className={cn("w-[18px] h-[18px]", iconColor)} />
             </div>
             <div className="flex gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
