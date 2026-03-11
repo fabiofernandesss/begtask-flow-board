@@ -48,31 +48,9 @@ interface BoardStats {
 
 const BOARD_ICONS = [LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag];
 
-const ICON_COLORS = [
-  "text-[hsl(214,85%,45%)]",   // azul BEG
-  "text-[hsl(262,60%,50%)]",   // roxo
-  "text-[hsl(160,55%,40%)]",   // verde-água
-  "text-[hsl(340,65%,50%)]",   // rosa
-  "text-[hsl(28,80%,50%)]",    // laranja
-  "text-[hsl(190,70%,42%)]",   // ciano
-  "text-[hsl(45,80%,45%)]",    // dourado
-  "text-[hsl(142,50%,42%)]",   // verde
-  "text-[hsl(290,50%,50%)]",   // magenta
-  "text-[hsl(10,70%,50%)]",    // vermelho-coral
-];
+const ICON_COLORS = Array(10).fill("text-white");
 
-const ICON_BG = [
-  "bg-[hsl(214,85%,45%,0.1)]",
-  "bg-[hsl(262,60%,50%,0.1)]",
-  "bg-[hsl(160,55%,40%,0.1)]",
-  "bg-[hsl(340,65%,50%,0.1)]",
-  "bg-[hsl(28,80%,50%,0.1)]",
-  "bg-[hsl(190,70%,42%,0.1)]",
-  "bg-[hsl(45,80%,45%,0.1)]",
-  "bg-[hsl(142,50%,42%,0.1)]",
-  "bg-[hsl(290,50%,50%,0.1)]",
-  "bg-[hsl(10,70%,50%,0.1)]",
-];
+const ICON_BG = Array(10).fill("bg-[hsl(271,76%,44%)]");
 
 const getBoardHash = (boardId: string) => {
   let hash = 0;
@@ -301,7 +279,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           )}
         >
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", iconBg)}>
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0", iconBg)}>
               <BoardIcon className={cn("w-4 h-4", iconColor)} />
             </div>
 
@@ -370,7 +348,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         <div className="p-4">
           {/* Header: icon + actions */}
           <div className="flex items-start justify-between mb-3">
-            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", iconBg)}>
+            <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", iconBg)}>
               <BoardIcon className={cn("w-[18px] h-[18px]", iconColor)} />
             </div>
             <div className="flex gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
