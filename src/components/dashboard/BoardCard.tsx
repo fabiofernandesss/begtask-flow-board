@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight, Columns3, ListChecks, Users } from "lucide-react";
+import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight, Columns3, ListChecks, Users, LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EditBoardDialog from "./EditBoardDialog";
 import { notificationService } from "@/services/notificationService";
@@ -46,12 +46,24 @@ interface BoardStats {
   tasksCount: number;
 }
 
+const BOARD_ICONS = [LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag];
+
+const getBoardIcon = (boardId: string) => {
+  let hash = 0;
+  for (let i = 0; i < boardId.length; i++) {
+    hash = ((hash << 5) - hash) + boardId.charCodeAt(i);
+    hash |= 0;
+  }
+  return BOARD_ICONS[Math.abs(hash) % BOARD_ICONS.length];
+};
+
 const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [stats, setStats] = useState<BoardStats>({ columnsCount: 0, tasksCount: 0 });
+  const BoardIcon = getBoardIcon(board.id);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -155,17 +167,29 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
 
         const { data: tasksData, error: tasksError } = await supabase
           .from("tasks")
-          .select("responsavel_id")
+          .select("id, responsavel_id")
           .in("column_id", columnIds);
         if (tasksError) throw tasksError;
 
         setStats({ columnsCount, tasksCount: tasksData?.length || 0 });
 
-        const uniqueResponsavelIds = [...new Set(
-          (tasksData || []).map(t => t.responsavel_id).filter((v): v is string => Boolean(v))
-        )];
+        // Collect responsavel_ids
+        const responsavelIds = (tasksData || []).map(t => t.responsavel_id).filter((v): v is string => Boolean(v));
+
+        // Also fetch task_participants
+        const taskIds = (tasksData || []).map(t => t.id);
+        let participantUserIds: string[] = [];
+        if (taskIds.length > 0) {
+          const { data: participantsData } = await supabase
+            .from("task_participants")
+            .select("user_id")
+            .in("task_id", taskIds);
+          participantUserIds = (participantsData || []).map(p => p.user_id);
+        }
+
+        const allUserIds = [...new Set([...responsavelIds, ...participantUserIds])];
         
-        if (uniqueResponsavelIds.length === 0) {
+        if (allUserIds.length === 0) {
           setTeamMembers([]);
           return;
         }
@@ -173,7 +197,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         const { data: profilesData, error: profilesError } = await supabase
           .from("profiles")
           .select("id, nome, foto_perfil")
-          .in("id", uniqueResponsavelIds);
+          .in("id", allUserIds);
         if (profilesError) throw profilesError;
 
         setTeamMembers(profilesData || []);
@@ -228,12 +252,15 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
                 onClick={() => navigate(`/board/${board.id}`)}
               >
                 <div className="flex items-center gap-2.5 mb-1">
-                  {board.publico ? (
-                    <Globe className="w-4 h-4 text-primary flex-shrink-0" />
-                  ) : (
-                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  )}
-                  <h3 className="font-semibold truncate">{board.titulo}</h3>
+                   <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                     <BoardIcon className="w-3.5 h-3.5 text-primary" />
+                   </div>
+                   {board.publico ? (
+                     <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                   ) : (
+                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                   )}
+                   <h3 className="font-semibold truncate">{board.titulo}</h3>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 flex-shrink-0">
                     {stats.tasksCount} tarefa{stats.tasksCount !== 1 ? 's' : ''}
                   </Badge>
@@ -307,17 +334,20 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           {/* Header */}
           <div className="flex justify-between items-start gap-2 mb-3">
             <div className="flex items-start gap-2.5 flex-1 min-w-0">
-              <div className="w-9 h-9 rounded-[4px] bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                {board.publico ? (
-                  <Globe className="w-4.5 h-4.5 text-primary" />
-                ) : (
-                  <Lock className="w-4.5 h-4.5 text-muted-foreground" />
-                )}
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <BoardIcon className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-foreground truncate leading-tight text-base">
-                  {board.titulo}
-                </h3>
+                 <div className="flex items-center gap-1.5">
+                   <h3 className="font-semibold text-foreground truncate leading-tight text-base">
+                     {board.titulo}
+                   </h3>
+                   {board.publico ? (
+                     <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                   ) : (
+                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                   )}
+                 </div>
                 {board.descricao && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
                     {board.descricao}
