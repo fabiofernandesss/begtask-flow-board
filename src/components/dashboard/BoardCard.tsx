@@ -296,7 +296,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            "rounded-[4px] border border-border bg-card",
+            "rounded-lg border border-border bg-card",
             "group/card hover:border-primary/30 hover:shadow-sm transition-all duration-200"
           )}
         >
