@@ -218,7 +218,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
                   transition={{ delay: 0.1 }}
                   className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center"
                 >
-                  <Sparkles className="w-7 h-7 text-primary" />
+                  <BrainCircuit className="w-7 h-7 text-primary" />
                 </motion.div>
                 <div>
                   <h3 className="text-xl font-medium tracking-tight text-foreground">
