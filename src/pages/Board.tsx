@@ -764,23 +764,38 @@ const Board = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
-                <Button
-                  variant={viewMode === "kanban" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("kanban")}
-                  className="h-8"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="h-8"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5">
+                  {autoNotify ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+                  <Label htmlFor="auto-notify" className="text-xs cursor-pointer whitespace-nowrap">
+                    Notificar
+                  </Label>
+                  <Switch
+                    id="auto-notify"
+                    checked={autoNotify}
+                    onCheckedChange={setAutoNotify}
+                    className="scale-90"
+                  />
+                </div>
+
+                <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
+                  <Button
+                    variant={viewMode === "kanban" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("kanban")}
+                    className="h-8"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="h-8"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               <Button
