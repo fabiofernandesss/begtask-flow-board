@@ -108,7 +108,7 @@ const Dashboard = () => {
             <img src={logoBEG} alt="BEG Inovação" className="h-16" />
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 bg-muted/30 rounded-full p-1">
+              <div className="flex items-center gap-1 bg-muted/30 rounded-[4px] p-1">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
