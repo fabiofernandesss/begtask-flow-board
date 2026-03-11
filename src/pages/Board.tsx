@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit } from "lucide-react";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
@@ -13,6 +13,7 @@ import ListView from "@/components/board/ListView";
 import CommentsSection from "@/components/board/CommentsSection";
 import { BegIAChat } from "@/components/board/BegIAChat";
 import WhatsAppBroadcast from "@/components/board/WhatsAppBroadcast";
+import BoardPeopleSection from "@/components/board/BoardPeopleSection";
 import { notificationService } from "@/services/notificationService";
 import ReactMarkdown from "react-markdown";
 import logoBEG from "@/assets/logoBEG.png";
@@ -794,10 +795,14 @@ const Board = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="board" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="board" className="flex items-center gap-2">
               <Kanban className="w-4 h-4" />
               Board
+            </TabsTrigger>
+            <TabsTrigger value="people" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Pessoas
             </TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
@@ -868,6 +873,13 @@ const Board = () => {
               boardId={id!} 
               isPublic={false}
               className="max-w-4xl mx-auto"
+            />
+          </TabsContent>
+
+          <TabsContent value="people" className="mt-0">
+            <BoardPeopleSection
+              boardId={id!}
+              onMembersChanged={fetchBoardData}
             />
           </TabsContent>
 
