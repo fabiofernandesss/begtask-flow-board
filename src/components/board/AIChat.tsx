@@ -47,7 +47,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   const loadMessages = async () => {
     try {
       const { data: messagesData, error } = await supabase
-        .from('board_messages' as any)
+        .from('board_messages')
         .select('id, message_content, sender_type, sender_name, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: true });
