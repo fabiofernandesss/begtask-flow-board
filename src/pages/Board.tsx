@@ -734,12 +734,6 @@ const Board = () => {
     }
   }, [id]);
 
-  // Auto-scroll to bottom of chat
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chatHistory]);
 
   if (loading) {
     return (
