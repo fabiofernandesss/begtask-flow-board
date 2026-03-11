@@ -12,11 +12,11 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Base colors */
-    --background: 0 0% 96%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 9%;
 
     /* Card */
-    --card: 0 0% 98%;
+    --card: 0 0% 96%;
     --card-foreground: 0 0% 9%;
 
     /* Popover */

@@ -71,7 +71,7 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-20 bg-muted/30">
+      <section className="container mx-auto px-4 py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
@@ -83,7 +83,7 @@ const Landing = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <CheckCircle2 className="w-6 h-6 text-primary" />
               </div>
@@ -93,7 +93,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Users className="w-6 h-6 text-primary" />
               </div>
@@ -103,7 +103,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Shield className="w-6 h-6 text-primary" />
               </div>
@@ -113,7 +113,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Clock className="w-6 h-6 text-primary" />
               </div>
@@ -123,7 +123,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
@@ -133,7 +133,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Lock className="w-6 h-6 text-primary" />
               </div>
@@ -143,7 +143,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Zap className="w-6 h-6 text-primary" />
               </div>
@@ -153,7 +153,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Users className="w-6 h-6 text-primary" />
               </div>
@@ -184,7 +184,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 bg-muted/30">
+      <footer className="border-t border-border py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-4 gap-8 mb-8">
