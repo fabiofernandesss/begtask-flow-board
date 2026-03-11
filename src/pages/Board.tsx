@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, MessageCircle, Send, Bot, User, RefreshCw, Phone } from "lucide-react";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, MessageCircle, Phone, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
