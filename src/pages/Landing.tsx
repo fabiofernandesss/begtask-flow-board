@@ -93,7 +93,7 @@ const Landing = () => {
               </p>
             </div>
 
-            <div className="bg-card p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 border border-border/50 group hover:scale-105 hover:-translate-y-1">
+            <div className="bg-card/80 border border-border/30 p-6 rounded-lg shadow-card hover:shadow-hover transition-all duration-300 group hover:scale-105 hover:-translate-y-1">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:rotate-6 transition-all duration-300">
                 <Users className="w-6 h-6 text-primary" />
               </div>
