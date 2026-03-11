@@ -20,7 +20,7 @@ interface AIChatProps {
   isPublic?: boolean;
 }
 
-const DEEPSEEK_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+
 
 export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -149,28 +149,50 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     onDelta: (text: string) => void,
     onDone: () => void
   ) => {
-    const resp = await fetch(DEEPSEEK_CHAT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ messages: chatMessages, boardContext }),
+    const { data, error } = await supabase.functions.invoke('deepseek-chat', {
+      body: { messages: chatMessages, boardContext },
     });
 
-    if (!resp.ok) {
-      const errorData = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
-      throw new Error(errorData.error || `Erro ${resp.status}`);
+    if (error) {
+      throw new Error(error.message || 'Erro ao chamar AI Brain');
     }
 
-    if (!resp.body) throw new Error("Stream não disponível");
+    // data is a Blob when streaming - convert to ReadableStream
+    if (data instanceof Blob) {
+      const text = await data.text();
+      // Parse SSE lines
+      const lines = text.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith(':') || !trimmed.startsWith('data: ')) continue;
+        const jsonStr = trimmed.slice(6).trim();
+        if (jsonStr === '[DONE]') break;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch { /* ignore parse errors */ }
+      }
+      onDone();
+      return;
+    }
 
-    const reader = resp.body.getReader();
+    // Fallback: if data has a body (ReadableStream)
+    const reader = (data as Response).body?.getReader();
+    if (!reader) {
+      // data might be plain JSON (non-streaming response)
+      if (typeof data === 'object' && data.choices) {
+        const content = data.choices[0]?.message?.content;
+        if (content) onDelta(content);
+      }
+      onDone();
+      return;
+    }
+
     const decoder = new TextDecoder();
     let textBuffer = "";
-    let streamDone = false;
 
-    while (!streamDone) {
+    while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       textBuffer += decoder.decode(value, { stream: true });
@@ -185,31 +207,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
         if (!line.startsWith("data: ")) continue;
 
         const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") {
-          streamDone = true;
-          break;
-        }
+        if (jsonStr === "[DONE]") break;
 
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) onDelta(content);
-        } catch {
-          textBuffer = line + "\n" + textBuffer;
-          break;
-        }
-      }
-    }
-
-    // Flush remaining
-    if (textBuffer.trim()) {
-      for (let raw of textBuffer.split("\n")) {
-        if (!raw) continue;
-        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-        if (raw.startsWith(":") || raw.trim() === "") continue;
-        if (!raw.startsWith("data: ")) continue;
-        const jsonStr = raw.slice(6).trim();
-        if (jsonStr === "[DONE]") continue;
         try {
           const parsed = JSON.parse(jsonStr);
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
