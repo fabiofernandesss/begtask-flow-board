@@ -49,29 +49,29 @@ interface BoardStats {
 const BOARD_ICONS = [LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag];
 
 const ICON_COLORS = [
-  "text-blue-600",
-  "text-violet-600",
-  "text-emerald-600",
-  "text-orange-600",
-  "text-rose-600",
-  "text-indigo-600",
-  "text-cyan-600",
-  "text-fuchsia-600",
-  "text-lime-600",
-  "text-amber-600",
+  "text-[hsl(214,85%,45%)]",   // azul BEG
+  "text-[hsl(262,60%,50%)]",   // roxo
+  "text-[hsl(160,55%,40%)]",   // verde-água
+  "text-[hsl(340,65%,50%)]",   // rosa
+  "text-[hsl(28,80%,50%)]",    // laranja
+  "text-[hsl(190,70%,42%)]",   // ciano
+  "text-[hsl(45,80%,45%)]",    // dourado
+  "text-[hsl(142,50%,42%)]",   // verde
+  "text-[hsl(290,50%,50%)]",   // magenta
+  "text-[hsl(10,70%,50%)]",    // vermelho-coral
 ];
 
 const ICON_BG = [
-  "bg-blue-500/10",
-  "bg-violet-500/10",
-  "bg-emerald-500/10",
-  "bg-orange-500/10",
-  "bg-rose-500/10",
-  "bg-indigo-500/10",
-  "bg-cyan-500/10",
-  "bg-fuchsia-500/10",
-  "bg-lime-500/10",
-  "bg-amber-500/10",
+  "bg-[hsl(214,85%,45%,0.1)]",
+  "bg-[hsl(262,60%,50%,0.1)]",
+  "bg-[hsl(160,55%,40%,0.1)]",
+  "bg-[hsl(340,65%,50%,0.1)]",
+  "bg-[hsl(28,80%,50%,0.1)]",
+  "bg-[hsl(190,70%,42%,0.1)]",
+  "bg-[hsl(45,80%,45%,0.1)]",
+  "bg-[hsl(142,50%,42%,0.1)]",
+  "bg-[hsl(290,50%,50%,0.1)]",
+  "bg-[hsl(10,70%,50%,0.1)]",
 ];
 
 const getBoardHash = (boardId: string) => {
