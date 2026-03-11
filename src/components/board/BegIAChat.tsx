@@ -174,7 +174,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5 text-primary" />
+              <BrainCircuit className="w-4.5 h-4.5 text-primary" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground tracking-tight">Beg IA</h2>
