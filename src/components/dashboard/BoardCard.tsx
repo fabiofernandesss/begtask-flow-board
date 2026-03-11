@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight, Columns3, ListChecks, Users } from "lucide-react";
+import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight, Columns3, ListChecks, Users, LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EditBoardDialog from "./EditBoardDialog";
 import { notificationService } from "@/services/notificationService";
