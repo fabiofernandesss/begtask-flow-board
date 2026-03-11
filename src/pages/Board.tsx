@@ -339,8 +339,8 @@ const Board = () => {
             await supabase.from("tasks").update({ posicao: task.posicao }).eq("id", task.id);
           }
 
-          // Enviar notificação para responsável e participantes da tarefa
-          try {
+          // Enviar notificação para responsável e participantes da tarefa (se toggle ativo)
+          if (autoNotify) try {
             console.log("🔄 Iniciando envio de notificações para tarefa:", movedTask.titulo);
             
             // Verificar sessão antes de enviar notificação
