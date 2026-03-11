@@ -80,6 +80,7 @@ const Board = () => {
   const [taskParticipants, setTaskParticipants] = useState<TaskParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [autoNotify, setAutoNotify] = useState(true);
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
