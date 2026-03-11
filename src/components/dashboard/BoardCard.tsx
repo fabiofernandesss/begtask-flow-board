@@ -46,12 +46,24 @@ interface BoardStats {
   tasksCount: number;
 }
 
+const BOARD_ICONS = [LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag];
+
+const getBoardIcon = (boardId: string) => {
+  let hash = 0;
+  for (let i = 0; i < boardId.length; i++) {
+    hash = ((hash << 5) - hash) + boardId.charCodeAt(i);
+    hash |= 0;
+  }
+  return BOARD_ICONS[Math.abs(hash) % BOARD_ICONS.length];
+};
+
 const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [stats, setStats] = useState<BoardStats>({ columnsCount: 0, tasksCount: 0 });
+  const BoardIcon = getBoardIcon(board.id);
   const navigate = useNavigate();
   const { toast } = useToast();
 
