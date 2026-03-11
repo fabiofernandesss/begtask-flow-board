@@ -81,7 +81,7 @@ const TechBackground = () => {
     }
 
     const cards: FloatingCard[] = [];
-    const cardCount = 10;
+    const cardCount = 6;
 
     for (let i = 0; i < cardCount; i++) {
       cards.push(new FloatingCard());
