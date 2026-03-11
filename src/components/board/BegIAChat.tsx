@@ -168,15 +168,6 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
           } catch { /* skip partial */ }
         }
       }
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsert(content);
-          } catch { /* skip */ }
-        }
-      } else if (typeof data === 'object' && data?.choices) {
-        const content = data.choices[0]?.message?.content;
-        if (content) upsert(content);
-      }
 
       if (!assistantText) {
         upsert('Desculpe, não consegui gerar uma resposta no momento.');
