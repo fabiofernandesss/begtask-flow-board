@@ -13,7 +13,7 @@ import CreateColumnDialog from "@/components/board/CreateColumnDialog";
 import TaskDetailsModal from "@/components/board/TaskDetailsModal";
 import ListView from "@/components/board/ListView";
 import CommentsSection from "@/components/board/CommentsSection";
-import { AIChat } from "@/components/board/AIChat";
+import { BegIAChat } from "@/components/board/BegIAChat";
 import WhatsAppBroadcast from "@/components/board/WhatsAppBroadcast";
 import { notificationService } from "@/services/notificationService";
 import ReactMarkdown from "react-markdown";
