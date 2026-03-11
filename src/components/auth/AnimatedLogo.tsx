@@ -2,11 +2,11 @@ import logoBEG from "@/assets/logoBEG.png";
 
 const AnimatedLogo = () => {
   return (
-    <div className="relative mb-8">
+    <div className="relative mb-8 flex justify-center">
       <img 
         src={logoBEG} 
         alt="BEG Inovação" 
-        className="h-24 animate-fade-in"
+        className="h-28 animate-fade-in"
       />
     </div>
   );
