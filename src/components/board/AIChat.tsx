@@ -74,7 +74,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   const saveMessage = async (content: string, senderType: 'user' | 'ai') => {
     try {
       const { error } = await supabase
-        .from('board_messages' as any)
+        .from('board_messages')
         .insert({
           board_id: boardId,
           sender_type: senderType,
