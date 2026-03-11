@@ -279,7 +279,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           )}
         >
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", iconBg)}>
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0", iconBg)}>
               <BoardIcon className={cn("w-4 h-4", iconColor)} />
             </div>
 
