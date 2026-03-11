@@ -795,10 +795,14 @@ const Board = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="board" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="board" className="flex items-center gap-2">
               <Kanban className="w-4 h-4" />
               Board
+            </TabsTrigger>
+            <TabsTrigger value="people" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Pessoas
             </TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
