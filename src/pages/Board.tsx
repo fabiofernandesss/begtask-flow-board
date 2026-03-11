@@ -275,12 +275,12 @@ const Board = () => {
       setColumns(updated);
 
       try {
-        for (const col of updated) {
-          await supabase
-            .from("columns")
-            .update({ posicao: col.posicao })
-            .eq("id", col.id);
-        }
+        // Use Promise.all for atomic update
+        await Promise.all(
+          updated.map(col =>
+            supabase.from("columns").update({ posicao: col.posicao }).eq("id", col.id)
+          )
+        );
       } catch (error: any) {
         toast({
           title: "Erro ao reordenar colunas",
@@ -477,7 +477,6 @@ const Board = () => {
 
   const handleColumnCreated = async () => {
     try {
-      // Atualizar apenas as colunas sem recarregar tudo
       const { data: columnsData, error: columnsError } = await supabase
         .from("columns")
         .select("*")
@@ -502,10 +501,60 @@ const Board = () => {
       setColumns(columnsWithTasks);
     } catch (error: any) {
       console.error("Erro ao atualizar colunas:", error);
-      // Fallback para recarregar tudo se houver erro
       fetchBoardData();
     }
     setColumnDialogOpen(false);
+  };
+
+  const handleMoveColumn = async (columnId: string, direction: 'left' | 'right') => {
+    const currentIndex = columns.findIndex(c => c.id === columnId);
+    if (currentIndex === -1) return;
+    
+    const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= columns.length) return;
+
+    const reordered = Array.from(columns);
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    const updated = reordered.map((col, idx) => ({ ...col, posicao: idx }));
+    setColumns(updated);
+
+    try {
+      await Promise.all(
+        updated.map(col =>
+          supabase.from("columns").update({ posicao: col.posicao }).eq("id", col.id)
+        )
+      );
+    } catch (error: any) {
+      toast({
+        title: "Erro ao mover coluna",
+        description: error.message,
+        variant: "destructive",
+      });
+      fetchBoardData();
+    }
+  };
+
+  const handleRenameColumn = async (columnId: string, newTitle: string) => {
+    // Optimistic update
+    setColumns(prev => prev.map(col => col.id === columnId ? { ...col, titulo: newTitle } : col));
+    
+    try {
+      const { error } = await supabase
+        .from("columns")
+        .update({ titulo: newTitle })
+        .eq("id", columnId);
+      if (error) throw error;
+      toast({ title: "Coluna renomeada" });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao renomear coluna",
+        description: error.message,
+        variant: "destructive",
+      });
+      fetchBoardData();
+    }
   };
 
   const handleDeleteColumn = async (columnId: string) => {
@@ -835,11 +884,12 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
+              <div className="flex items-center bg-muted/50 rounded-[4px] p-0.5">
                 <Button
                   variant={viewMode === "kanban" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("kanban")}
+                  className="h-8"
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </Button>
@@ -847,6 +897,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("list")}
+                  className="h-8"
                 >
                   <List className="w-4 h-4" />
                 </Button>
@@ -854,7 +905,7 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
 
               <Button
                 onClick={() => setColumnDialogOpen(true)}
-                className="gap-2"
+                className="gap-2 h-8"
                 size="sm"
               >
                 <Plus className="w-4 h-4" />
@@ -897,10 +948,13 @@ Responda de forma útil e específica sobre o projeto, suas tarefas, progresso o
                           key={column.id}
                           column={column}
                           index={index}
+                          totalColumns={columns.length}
                           onDelete={handleDeleteColumn}
                           onDeleteTask={handleDeleteTask}
                           onTaskClick={handleTaskClick}
                           onTaskCreated={fetchBoardData}
+                          onMoveColumn={handleMoveColumn}
+                          onRenameColumn={handleRenameColumn}
                           teamMembers={teamMembers}
                           taskParticipants={taskParticipants}
                         />
