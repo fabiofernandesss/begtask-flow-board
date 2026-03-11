@@ -53,11 +53,11 @@ const TechBackground = () => {
         
         // Draw card with gradient
         const gradient = ctx.createLinearGradient(-this.size/2, -this.size/2, this.size/2, this.size/2);
-        gradient.addColorStop(0, `hsla(272, 69%, 45%, ${this.opacity})`);
-        gradient.addColorStop(1, `hsla(272, 69%, 55%, ${this.opacity})`);
+        gradient.addColorStop(0, `hsla(214, 98%, 33%, ${this.opacity})`);
+        gradient.addColorStop(1, `hsla(214, 98%, 43%, ${this.opacity})`);
         
         ctx.fillStyle = gradient;
-        ctx.strokeStyle = `hsla(272, 69%, 70%, ${this.opacity * 0.5})`;
+        ctx.strokeStyle = `hsla(214, 98%, 60%, ${this.opacity * 0.3})`;
         ctx.lineWidth = 2;
         
         // Rounded rectangle
