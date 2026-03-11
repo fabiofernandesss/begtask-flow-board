@@ -20,7 +20,7 @@ interface AIChatProps {
   isPublic?: boolean;
 }
 
-const DEEPSEEK_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+
 
 export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => {
   const [isOpen, setIsOpen] = useState(false);
