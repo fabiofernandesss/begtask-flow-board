@@ -271,10 +271,24 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
           <div className="w-9 h-9 rounded-full bg-[hsl(271,76%,44%)] flex items-center justify-center">
             <Users className="w-4 h-4 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-semibold text-foreground">Membros do Projeto</h3>
             <p className="text-sm text-muted-foreground">{members.length} pessoa(s)</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncAllMembersToTasks}
+            disabled={syncing || members.length === 0}
+            className="gap-1.5"
+          >
+            {syncing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+            Atualizar Tarefas
+          </Button>
         </div>
 
         {loading ? (
