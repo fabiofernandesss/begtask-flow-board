@@ -157,7 +157,7 @@ const Dashboard = () => {
             
             <Button
               onClick={() => setCreateDialogOpen(true)}
-              className="gap-2 gradient-primary hover:shadow-hover hover:scale-105 transition-all duration-300"
+              className="gap-2 hover:shadow-hover hover:scale-105 transition-all duration-300"
               size="lg"
             >
               <Plus className="w-5 h-5" />
