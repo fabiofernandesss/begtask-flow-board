@@ -287,7 +287,7 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 justify-start">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <BrainCircuit className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div className="bg-muted border border-border rounded-2xl px-4 py-2.5 flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Pensando</span>
