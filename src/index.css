@@ -72,12 +72,12 @@ All colors MUST be HSL.
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 9%;
+    --sidebar-foreground: 220 20% 10%;
     --sidebar-primary: 214 98% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 32%;
+    --sidebar-accent: 220 15% 40%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 83%;
+    --sidebar-border: 220 15% 90%;
     --sidebar-ring: 214 98% 33%;
 
     /* Gradients */
