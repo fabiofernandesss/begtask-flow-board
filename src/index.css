@@ -63,8 +63,8 @@ All colors MUST be HSL.
     --priority-alta: 0 84% 60%;
 
     /* Border and input */
-    --border: 0 0% 83%;
-    --input: 0 0% 83%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
     --ring: 214 98% 33%;
 
     /* Radius - compact design */
