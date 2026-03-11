@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, Send, Bot, User, X, Minimize2, Maximize2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -18,6 +19,8 @@ interface AIChatProps {
   boardId: string;
   isPublic?: boolean;
 }
+
+const DEEPSEEK_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
 
 export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,7 +38,6 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     scrollToBottom();
   }, [messages]);
 
-  // Carregar mensagens existentes quando o chat abrir
   useEffect(() => {
     if (isOpen && boardId) {
       loadMessages();
@@ -70,377 +72,158 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
   };
 
   const saveMessage = async (content: string, senderType: 'user' | 'ai') => {
-    console.log('💾 saveMessage iniciado:', { senderType, boardId, contentLength: content.length });
-    
     try {
-      const messageData = {
-        board_id: boardId,
-        sender_type: senderType,
-        sender_name: senderType === 'user' ? 'Usuário' : 'IA Assistente',
-        message_content: content,
-        is_public: false
-      };
-      
-      console.log('📤 Enviando dados para Supabase:', messageData);
-      
       const { error } = await supabase
         .from('board_messages' as any)
-        .insert(messageData);
+        .insert({
+          board_id: boardId,
+          sender_type: senderType,
+          sender_name: senderType === 'user' ? 'Usuário' : 'AI Brain',
+          message_content: content,
+          is_public: false
+        });
 
       if (error) {
-        console.error('❌ Erro do Supabase ao salvar mensagem:', error);
-        console.error('❌ Detalhes do erro:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-      } else {
-        console.log('✅ Mensagem salva com sucesso no Supabase');
+        console.error('Erro ao salvar mensagem:', error);
       }
     } catch (error) {
-      console.error('❌ Erro geral ao salvar mensagem:', error);
+      console.error('Erro ao salvar mensagem:', error);
     }
   };
 
-  const getBoardData = async () => {
+  const getBoardContext = async () => {
     try {
-      // Buscar dados do board
-      const { data: boardData, error: boardError } = await supabase
+      const { data: boardData } = await supabase
         .from('boards')
-        .select(`
-          id,
-          titulo,
-          descricao,
-          created_at,
-          publico,
-          users!boards_user_id_fkey(nome)
-        `)
+        .select('id, titulo, descricao, created_at, publico')
         .eq('id', boardId)
         .single();
 
-      if (boardError) throw boardError;
-
-      // Buscar colunas
-      const { data: columnsData, error: columnsError } = await supabase
+      const { data: columnsData } = await supabase
         .from('columns')
         .select('id, titulo, posicao, cor')
         .eq('board_id', boardId)
         .order('posicao');
 
-      if (columnsError) throw columnsError;
+      const columnIds = columnsData?.map(c => c.id) || [];
 
-      // Buscar tarefas
-      const { data: tasksData, error: tasksError } = await supabase
+      const { data: tasksData } = await supabase
         .from('tasks')
-        .select(`
-          id,
-          titulo,
-          descricao,
-          prioridade,
-          data_entrega,
-          column_id,
-          created_at,
-          responsavel_id,
-          users!tasks_responsavel_id_fkey(nome),
-          columns!tasks_column_id_fkey(titulo)
-        `)
-        .in('column_id', columnsData?.map(c => c.id) || []);
+        .select('id, titulo, descricao, prioridade, data_entrega, column_id, created_at, responsavel_id')
+        .in('column_id', columnIds.length > 0 ? columnIds : ['none']);
 
-      if (tasksError) throw tasksError;
-
-      // Buscar comentários
-      const { data: commentsData, error: commentsError } = await supabase
+      const { data: commentsData } = await supabase
         .from('board_comments' as any)
-        .select('id, author_name, content, is_public, created_at')
+        .select('id, author_name, content, created_at')
         .eq('board_id', boardId)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (commentsError) throw commentsError;
+      const tasksWithColumns = tasksData?.map((task: any) => {
+        const col = columnsData?.find(c => c.id === task.column_id);
+        return { ...task, column_title: col?.titulo || '' };
+      }) || [];
 
-      // Buscar mensagens do chat
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('board_messages' as any)
-        .select('id, message_content, sender_type, sender_name, created_at')
-        .eq('board_id', boardId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (messagesError) throw messagesError;
-
-      // Estruturar dados como esperado
       return {
-        board_id: boardData.id,
-        board_title: boardData.titulo,
-        board_description: boardData.descricao,
-        board_created_at: boardData.created_at,
-        is_public: boardData.publico,
-        owner_name: (boardData as any).profiles?.nome || 'Usuário',
+        board: boardData,
         columns: columnsData || [],
-        tasks: tasksData?.map((task: any) => ({
-          ...task,
-          responsible: task.profiles?.nome || 'Não atribuído',
-          column_title: task.columns?.titulo || ''
-        })) || [],
-        board_comments: commentsData || [],
-        board_messages: messagesData || [],
-        total_tasks: tasksData?.length || 0,
-        total_columns: columnsData?.length || 0,
-        total_comments: commentsData?.length || 0,
-        total_messages: messagesData?.length || 0
+        tasks: tasksWithColumns,
+        comments: commentsData || [],
+        stats: {
+          total_tasks: tasksData?.length || 0,
+          total_columns: columnsData?.length || 0,
+          total_comments: commentsData?.length || 0,
+          high_priority: tasksData?.filter((t: any) => t.prioridade === 'alta').length || 0,
+          overdue: tasksData?.filter((t: any) => t.data_entrega && new Date(t.data_entrega) < new Date()).length || 0,
+        }
       };
     } catch (error) {
-      console.error('Erro ao buscar dados do board:', error);
+      console.error('Erro ao buscar contexto:', error);
       return null;
     }
   };
 
-  const generateAIResponse = async (userMessage: string, boardData: any) => {
-    try {
-      if (!boardData) {
-        return 'Desculpe, não consegui acessar os dados do board no momento.';
-      }
+  const streamDeepSeekResponse = async (
+    chatMessages: { role: string; content: string }[],
+    boardContext: any,
+    onDelta: (text: string) => void,
+    onDone: () => void
+  ) => {
+    const resp = await fetch(DEEPSEEK_CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages: chatMessages, boardContext }),
+    });
 
-      // Os dados já vêm estruturados da função getBoardData
-      const boardContext = {
-        board: {
-          id: boardData.board_id,
-          title: boardData.board_title,
-          description: boardData.board_description,
-          created_at: boardData.board_created_at,
-          is_public: boardData.is_public,
-          owner: boardData.owner_name
-        },
-        columns: boardData.columns || [],
-        tasks: boardData.tasks || [],
-        comments: boardData.board_comments || [],
-        messages: boardData.board_messages || [],
-        stats: {
-          total_tasks: boardData.total_tasks || 0,
-          total_columns: boardData.total_columns || 0,
-          total_comments: boardData.total_comments || 0,
-          total_messages: boardData.total_messages || 0
-        }
-      };
-
-
-
-      // Resposta livre da IA baseada no contexto do board
-      let response = '';
-      
-      // Análise inteligente da mensagem do usuário
-      const message = userMessage.toLowerCase();
-      
-      // Informações disponíveis do board
-      const taskCount = (boardContext as any).stats?.total_tasks || 0;
-      const columnCount = (boardContext as any).stats?.total_columns || 0;
-      const commentCount = (boardContext as any).stats?.total_comments || 0;
-      const messageCount = (boardContext as any).stats?.total_messages || 0;
-      
-      // Resposta contextual e livre
-      if (message.includes('tarefas') || message.includes('tasks') || message.includes('task')) {
-        const highPriorityTasks = boardContext.tasks.filter(t => t.prioridade === 'alta').length;
-        const tasksByColumn = boardContext.columns.map(col => ({
-          name: col.titulo,
-          count: boardContext.tasks.filter(t => t.column_id === col.id).length
-        }));
-        
-        response = `📋 **Análise das Tarefas**\n\n`;
-        response += `Temos **${taskCount} tarefas** neste projeto. `;
-        
-        if (highPriorityTasks > 0) {
-          response += `Destaque para **${highPriorityTasks} tarefa${highPriorityTasks !== 1 ? 's' : ''} de alta prioridade** que merecem atenção especial.\n\n`;
-        } else {
-          response += `Nenhuma tarefa está marcada como alta prioridade no momento.\n\n`;
-        }
-        
-        response += `📊 **Distribuição por coluna:**\n`;
-        tasksByColumn.forEach(col => {
-          response += `• **${col.name}**: ${col.count} tarefa${col.count !== 1 ? 's' : ''}\n`;
-        });
-        
-        // Análise adicional
-         const completedTasks = boardContext.tasks.filter(t => 
-           t.column_title && (t.column_title.toLowerCase().includes('concluí') || 
-           t.column_title.toLowerCase().includes('finaliz') || 
-           t.column_title.toLowerCase().includes('done'))
-         ).length;
-        
-        if (completedTasks > 0) {
-          response += `\n✅ **${completedTasks} tarefa${completedTasks !== 1 ? 's já foram' : ' já foi'} concluída${completedTasks !== 1 ? 's' : ''}!**`;
-        }
-        
-      } else if (message.includes('responsável') || message.includes('responsible') || message.includes('quem')) {
-        const responsibles = [...new Set(boardContext.tasks.map(t => t.users?.nome || 'Não atribuído').filter(r => r && r !== 'Não atribuído'))];
-        response = `👥 **Equipe e Responsabilidades**\n\n`;
-        
-        if (responsibles.length > 0) {
-          response += `Temos **${responsibles.length} pessoa${responsibles.length !== 1 ? 's' : ''}** trabalhando neste projeto:\n\n`;
-          responsibles.forEach(resp => {
-            const userTasks = boardContext.tasks.filter(t => t.users?.nome === resp);
-            const taskCount = userTasks.length;
-            response += `👤 **${resp}**: ${taskCount} tarefa${taskCount !== 1 ? 's' : ''}\n`;
-            
-            // Mostrar algumas tarefas
-            if (userTasks.length > 0) {
-              const sampleTasks = userTasks.slice(0, 2);
-              sampleTasks.forEach(task => {
-                response += `   • ${task.titulo}\n`;
-              });
-              if (userTasks.length > 2) {
-                response += `   • ... e mais ${userTasks.length - 2} tarefa${userTasks.length - 2 !== 1 ? 's' : ''}\n`;
-              }
-            }
-            response += `\n`;
-          });
-        } else {
-          response += `Ainda não há responsáveis definidos para as tarefas. É uma boa hora para organizar a equipe! 🎯`;
-        }
-        
-      } else if (message.includes('prazo') || message.includes('entrega') || message.includes('deadline') || message.includes('quando')) {
-        const tasksWithDueDate = boardContext.tasks.filter(t => t.data_entrega);
-        const now = new Date();
-        const overdueTasks = tasksWithDueDate.filter(t => new Date(t.data_entrega) < now);
-        const upcomingTasks = tasksWithDueDate.filter(t => {
-          const dueDate = new Date(t.data_entrega);
-          const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
-          return diffDays >= 0 && diffDays <= 7;
-        });
-        
-        response = `⏰ **Gestão de Prazos**\n\n`;
-        
-        if (overdueTasks.length > 0) {
-          response += `🚨 **ATENÇÃO**: ${overdueTasks.length} tarefa${overdueTasks.length !== 1 ? 's estão' : ' está'} atrasada${overdueTasks.length !== 1 ? 's' : ''}:\n`;
-          overdueTasks.forEach(task => {
-            const daysLate = Math.ceil((now.getTime() - new Date(task.data_entrega).getTime()) / (1000 * 3600 * 24));
-            response += `🔴 **${task.titulo}** - ${daysLate} dia${daysLate !== 1 ? 's' : ''} de atraso\n`;
-          });
-          response += `\n`;
-        }
-        
-        if (upcomingTasks.length > 0) {
-          response += `📅 **Próximos prazos (7 dias):**\n`;
-          upcomingTasks.forEach(task => {
-            const dueDate = new Date(task.data_entrega);
-            const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
-            response += `🟡 **${task.titulo}** - ${diffDays === 0 ? 'hoje' : `${diffDays} dia${diffDays !== 1 ? 's' : ''}`}\n`;
-          });
-        } else if (overdueTasks.length === 0) {
-          response += `✅ Ótimas notícias! Não há prazos urgentes nos próximos 7 dias.`;
-        }
-        
-      } else if (message.includes('comentário') || message.includes('comment') || message.includes('conversa') || message.includes('discussão')) {
-        response = `💬 **Atividade e Discussões**\n\n`;
-        response += `Há **${commentCount} comentário${commentCount !== 1 ? 's' : ''}** e **${messageCount} mensagem${messageCount !== 1 ? 's' : ''}** neste projeto.\n\n`;
-        
-        if (boardContext.comments && boardContext.comments.length > 0) {
-          response += `📝 **Últimas discussões:**\n\n`;
-          const recentComments = boardContext.comments.slice(-3);
-          recentComments.forEach(comment => {
-            const date = new Date(comment.created_at).toLocaleDateString();
-            response += `💭 **${comment.author_name}** (${date}):\n"${comment.content}"\n\n`;
-          });
-          
-          if (boardContext.comments.length > 3) {
-            response += `... e mais ${boardContext.comments.length - 3} comentário${boardContext.comments.length - 3 !== 1 ? 's' : ''} anterior${boardContext.comments.length - 3 !== 1 ? 'es' : ''}.`;
-          }
-        } else {
-          response += `Ainda não há comentários. Que tal começar uma discussão sobre o projeto? 🗣️`;
-        }
-        
-      } else if (message.includes('resumo') || message.includes('overview') || message.includes('geral') || message.includes('status')) {
-        response = `🎯 **Visão Geral do Projeto**\n\n`;
-        response += `📋 **${boardContext.board.title}**\n`;
-        if (boardContext.board.description) {
-          response += `📝 ${boardContext.board.description}\n\n`;
-        }
-        
-        response += `📊 **Números do projeto:**\n`;
-        response += `• ${boardContext.stats.total_tasks} tarefas em ${boardContext.stats.total_columns} colunas\n`;
-        response += `• ${boardContext.stats.total_comments} comentários da equipe\n`;
-        response += `• ${boardContext.stats.total_messages} mensagens no chat\n\n`;
-        
-        // Análise de progresso
-        const totalTasks = boardContext.tasks.length;
-        if (totalTasks > 0) {
-          const completedColumn = boardContext.columns.find(col => 
-            col.titulo.toLowerCase().includes('concluí') || 
-            col.titulo.toLowerCase().includes('finaliz') || 
-            col.titulo.toLowerCase().includes('done')
-          );
-          
-          if (completedColumn) {
-            const completedTasks = boardContext.tasks.filter(t => t.column_id === completedColumn.id).length;
-            const progress = Math.round((completedTasks / totalTasks) * 100);
-            response += `📈 **Progresso**: ${progress}% concluído (${completedTasks}/${totalTasks} tarefas)\n\n`;
-          }
-        }
-        
-        response += `👤 **Criado por**: ${boardContext.board.owner}\n`;
-        response += `📅 **Data de criação**: ${new Date(boardContext.board.created_at).toLocaleDateString()}`;
-        
-      } else if (message.includes('ajuda') || message.includes('help') || message.includes('o que') || message.includes('como')) {
-        response = `🤖 **Assistente IA do Board**\n\n`;
-        response += `Olá! Sou seu assistente inteligente e posso ajudar com qualquer coisa sobre este projeto.\n\n`;
-        response += `💡 **Algumas coisas que posso fazer:**\n`;
-        response += `• Analisar tarefas e responsabilidades\n`;
-        response += `• Verificar prazos e deadlines\n`;
-        response += `• Resumir discussões e comentários\n`;
-        response += `• Dar visão geral do progresso\n`;
-        response += `• Responder qualquer pergunta sobre o board\n\n`;
-        response += `🗣️ **Fale naturalmente comigo!** Pergunte qualquer coisa sobre:\n`;
-        response += `"Qual tarefa é mais complexa?", "Quem está responsável por X?", "Como está o progresso?", etc.\n\n`;
-        response += `📋 **Sobre este projeto**: ${boardContext.stats.total_tasks} tarefas, ${boardContext.stats.total_columns} colunas, ${boardContext.stats.total_comments} comentários`;
-        
-      } else {
-        // Resposta livre e contextual para qualquer pergunta
-        response = `🤔 Entendi sua pergunta sobre: "${userMessage}"\n\n`;
-        
-        // Tentar dar uma resposta contextual baseada no conteúdo do board
-        if (boardContext.tasks.length > 0) {
-          response += `Com base no que vejo neste projeto:\n\n`;
-          response += `📋 Temos **${boardContext.stats.total_tasks} tarefas** distribuídas em **${boardContext.stats.total_columns} colunas**\n`;
-          
-          if (boardContext.tasks.some(t => t.prioridade === 'alta')) {
-            response += `⚡ Algumas tarefas têm **prioridade alta** e merecem atenção\n`;
-          }
-          
-          if (boardContext.stats.total_comments > 0) {
-            response += `💬 A equipe está ativa com **${boardContext.stats.total_comments} comentário${boardContext.stats.total_comments !== 1 ? 's' : ''}**\n`;
-          }
-          
-          response += `\n👥 A equipe também pode responder questões mais específicas.\n\n`;
-          response += `💬 Como posso ajudar você melhor?\n\n`;
-          
-          // Mostrar contexto das conversas recentes se houver
-          if (boardContext.messages && boardContext.messages.length > 0) {
-            const recentTopics = boardContext.messages.slice(-3).map(m => m.content.substring(0, 50)).join(', ');
-            response += `💭 Baseado em nossas conversas recentes sobre: ${recentTopics}`;
-          }
-        } else {
-          response += `Este projeto ainda está sendo configurado. Que tal começarmos criando algumas tarefas? 🚀`;
-        }
-      }
-
-      return response;
-    } catch (error) {
-      console.error('Erro ao gerar resposta da IA:', error);
-      return 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.';
+    if (!resp.ok) {
+      const errorData = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+      throw new Error(errorData.error || `Erro ${resp.status}`);
     }
+
+    if (!resp.body) throw new Error("Stream não disponível");
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let streamDone = false;
+
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
+
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") {
+          streamDone = true;
+          break;
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch {
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // Flush remaining
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch { /* ignore */ }
+      }
+    }
+
+    onDone();
   };
 
   const handleSendMessage = async () => {
-    console.log('🚀 handleSendMessage iniciado');
-    console.log('📝 inputValue:', inputValue);
-    console.log('⏳ isLoading:', isLoading);
-    
-    if (!inputValue.trim() || isLoading) {
-      console.log('❌ Condição de saída: inputValue vazio ou isLoading true');
-      return;
-    }
+    if (!inputValue.trim() || isLoading) return;
 
-    console.log('✅ Criando mensagem do usuário...');
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputValue,
@@ -449,51 +232,53 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
     };
 
     setMessages(prev => [...prev, userMessage]);
-    console.log('✅ Mensagem do usuário adicionada ao estado');
-    
-    // Salvar mensagem do usuário no banco
-    console.log('💾 Salvando mensagem do usuário no banco...');
     await saveMessage(inputValue, 'user');
-    console.log('✅ Mensagem do usuário salva no banco');
     
+    const currentInput = inputValue;
     setInputValue('');
     setIsLoading(true);
-    console.log('⏳ Estado de loading ativado');
 
     try {
-      console.log('📊 Buscando dados do board...');
-      const boardData = await getBoardData();
-      console.log('✅ Dados do board obtidos:', boardData ? 'Sucesso' : 'Falhou');
-      
-      console.log('🤖 Gerando resposta da IA...');
-      const aiResponse = await generateAIResponse(inputValue, boardData);
-      console.log('✅ Resposta da IA gerada:', aiResponse.substring(0, 50) + '...');
+      const boardContext = await getBoardContext();
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: aiResponse,
-        sender: 'ai',
-        timestamp: new Date()
+      // Build conversation history for DeepSeek
+      const chatHistory = messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.content
+      }));
+      chatHistory.push({ role: 'user', content: currentInput });
+
+      let assistantSoFar = "";
+      const assistantId = (Date.now() + 1).toString();
+
+      const upsertAssistant = (chunk: string) => {
+        assistantSoFar += chunk;
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.sender === 'ai' && last.id === assistantId) {
+            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+          }
+          return [...prev, { id: assistantId, content: assistantSoFar, sender: 'ai', timestamp: new Date() }];
+        });
       };
 
-      setMessages(prev => [...prev, aiMessage]);
-      console.log('✅ Mensagem da IA adicionada ao estado');
-      
-      // Salvar resposta da IA no banco
-      console.log('💾 Salvando resposta da IA no banco...');
-      await saveMessage(aiResponse, 'ai');
-      console.log('✅ Resposta da IA salva no banco');
-      
-    } catch (error) {
-      console.error('❌ Erro em handleSendMessage:', error);
+      await streamDeepSeekResponse(
+        chatHistory,
+        boardContext,
+        (chunk) => upsertAssistant(chunk),
+        async () => {
+          await saveMessage(assistantSoFar, 'ai');
+          setIsLoading(false);
+        }
+      );
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível processar sua mensagem.",
+        description: error.message || "Não foi possível processar sua mensagem.",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
-      console.log('✅ handleSendMessage finalizado');
     }
   };
 
@@ -524,7 +309,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
                   onClick={() => setIsMinimized(!isMinimized)}>
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="w-5 h-5 text-primary" />
-          IA Assistente
+          AI Brain
         </CardTitle>
         <div className="flex gap-1">
           <Button
@@ -559,8 +344,8 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-primary/50" />
-                  <p>Olá! Sou a IA assistente deste board.</p>
-                  <p className="text-sm">Pergunte sobre tarefas, responsáveis, prazos ou qualquer coisa relacionada ao projeto!</p>
+                  <p className="font-medium">AI Brain</p>
+                  <p className="text-sm mt-1">Converse comigo sobre o projeto! Posso analisar tarefas, prazos, progresso e muito mais.</p>
                 </div>
               )}
               
@@ -582,7 +367,13 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
                         : 'bg-muted'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    {message.sender === 'ai' ? (
+                      <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm">{message.content}</p>
+                    )}
                     <p className="text-xs opacity-70 mt-1">
                       {message.timestamp.toLocaleTimeString()}
                     </p>
@@ -596,7 +387,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
                 </div>
               ))}
               
-              {isLoading && (
+              {isLoading && messages[messages.length - 1]?.sender !== 'ai' && (
                 <div className="flex gap-3 justify-start">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-primary" />
@@ -619,7 +410,7 @@ export const AIChat: React.FC<AIChatProps> = ({ boardId, isPublic = false }) => 
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Digite sua pergunta..."
+              placeholder="Pergunte ao AI Brain..."
               disabled={isLoading}
               className="flex-1"
             />
