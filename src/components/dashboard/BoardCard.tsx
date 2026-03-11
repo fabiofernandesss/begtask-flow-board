@@ -252,12 +252,15 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
                 onClick={() => navigate(`/board/${board.id}`)}
               >
                 <div className="flex items-center gap-2.5 mb-1">
-                  {board.publico ? (
-                    <Globe className="w-4 h-4 text-primary flex-shrink-0" />
-                  ) : (
-                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  )}
-                  <h3 className="font-semibold truncate">{board.titulo}</h3>
+                   <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                     <BoardIcon className="w-3.5 h-3.5 text-primary" />
+                   </div>
+                   {board.publico ? (
+                     <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                   ) : (
+                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                   )}
+                   <h3 className="font-semibold truncate">{board.titulo}</h3>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 flex-shrink-0">
                     {stats.tasksCount} tarefa{stats.tasksCount !== 1 ? 's' : ''}
                   </Badge>
