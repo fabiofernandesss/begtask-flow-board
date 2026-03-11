@@ -34,7 +34,7 @@ All colors MUST be HSL.
     --accent-gold-foreground: 0 0% 100%;
 
     /* Secondary */
-    --secondary: 0 0% 32%;
+    --secondary: 220 15% 40%;
     --secondary-foreground: 0 0% 98%;
 
     /* Muted */
