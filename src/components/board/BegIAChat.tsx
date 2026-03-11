@@ -70,22 +70,39 @@ export const BegIAChat: React.FC<BegIAChatProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const getBoardContext = () => ({
-    titulo: boardTitle,
-    colunas: columns.map((col: any) => ({
-      titulo: col.titulo,
-      tarefas: col.tasks?.map((t: any) => ({
-        titulo: t.titulo, descricao: t.descricao, prioridade: t.prioridade, data_entrega: t.data_entrega,
-      })) || [],
-    })),
-    membros: teamMembers.map((m: any) => ({ nome: m.nome })),
-    stats: {
-      total_tasks: columns.reduce((sum: number, c: any) => sum + (c.tasks?.length || 0), 0),
-      total_columns: columns.length,
-      high_priority: columns.reduce((sum: number, c: any) => sum + (c.tasks?.filter((t: any) => t.prioridade === 'alta').length || 0), 0),
-      overdue: columns.reduce((sum: number, c: any) => sum + (c.tasks?.filter((t: any) => t.data_entrega && new Date(t.data_entrega) < new Date()).length || 0), 0),
-    },
-  });
+  const getBoardContext = () => {
+    const now = new Date();
+    const totalTasks = columns.reduce((sum: number, c: any) => sum + (c.tasks?.length || 0), 0);
+    const highPriority = columns.reduce((sum: number, c: any) => sum + (c.tasks?.filter((t: any) => t.prioridade === 'alta').length || 0), 0);
+    const overdue = columns.reduce((sum: number, c: any) => sum + (c.tasks?.filter((t: any) => t.data_entrega && new Date(t.data_entrega) < now).length || 0), 0);
+    const dueSoon = columns.reduce((sum: number, c: any) => sum + (c.tasks?.filter((t: any) => {
+      if (!t.data_entrega) return false;
+      const d = new Date(t.data_entrega);
+      const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      return diff >= 0 && diff <= 3;
+    }).length || 0), 0);
+
+    return {
+      projeto: boardTitle,
+      resumo: { total_tarefas: totalTasks, colunas: columns.length, membros: teamMembers.length, alta_prioridade: highPriority, atrasadas: overdue, vencendo_em_3_dias: dueSoon },
+      pipeline: columns.map((col: any) => {
+        const tasks = col.tasks || [];
+        const urgent = tasks.filter((t: any) => t.prioridade === 'alta' || (t.data_entrega && new Date(t.data_entrega) < now));
+        return {
+          coluna: col.titulo,
+          total: tasks.length,
+          tarefas: tasks.map((t: any) => {
+            const entry: any = { titulo: t.titulo, prioridade: t.prioridade };
+            if (t.data_entrega) entry.entrega = t.data_entrega;
+            if (t.descricao) entry.desc = t.descricao.substring(0, 80);
+            return entry;
+          }),
+          ...(urgent.length > 0 && { urgentes: urgent.length }),
+        };
+      }),
+      equipe: teamMembers.map((m: any) => m.nome),
+    };
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
