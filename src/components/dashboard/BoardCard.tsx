@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, Lock, Globe, Calendar, Edit, ArrowRight, Columns3, ListChecks, Users, LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target, Rocket, Zap, Star, Lightbulb, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -18,9 +17,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface BoardCardProps {
   board: {
@@ -173,10 +172,8 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
 
         setStats({ columnsCount, tasksCount: tasksData?.length || 0 });
 
-        // Collect responsavel_ids
         const responsavelIds = (tasksData || []).map(t => t.responsavel_id).filter((v): v is string => Boolean(v));
 
-        // Also fetch task_participants
         const taskIds = (tasksData || []).map(t => t.id);
         let participantUserIds: string[] = [];
         if (taskIds.length > 0) {
@@ -244,80 +241,89 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
   if (viewMode === "list") {
     return (
       <>
-        <Card className="hover:border-primary/30 transition-all duration-200 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center gap-4">
-              <div
-                className="flex-1 min-w-0 cursor-pointer"
-                onClick={() => navigate(`/board/${board.id}`)}
-              >
-                <div className="flex items-center gap-2.5 mb-1">
-                   <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                     <BoardIcon className="w-3.5 h-3.5 text-primary" />
-                   </div>
-                   {board.publico ? (
-                     <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                   ) : (
-                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                   )}
-                   <h3 className="font-semibold truncate">{board.titulo}</h3>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 flex-shrink-0">
-                    {stats.tasksCount} tarefa{stats.tasksCount !== 1 ? 's' : ''}
-                  </Badge>
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-lg border border-border/50 bg-card p-5",
+            "group/feature hover:bg-primary/5 transition-colors duration-200"
+          )}
+        >
+          {/* Top gradient line on hover */}
+          <div className="opacity-0 group-hover/feature:opacity-100 transition duration-200 absolute inset-0 h-px w-full bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+          
+          <div className="flex justify-between items-center gap-4 relative z-10">
+            <div
+              className="flex-1 min-w-0 cursor-pointer"
+              onClick={() => navigate(`/board/${board.id}`)}
+            >
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <BoardIcon className="w-4.5 h-4.5 text-primary" />
                 </div>
-                {board.descricao && (
-                  <p className="text-sm text-muted-foreground line-clamp-1 ml-6.5">
-                    {board.descricao}
-                  </p>
+                {board.publico ? (
+                  <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                ) : (
+                  <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 )}
-              </div>
-
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {format(new Date(board.created_at), "dd MMM yyyy", { locale: ptBR })}
+                <h3 className="font-semibold text-foreground truncate text-base">{board.titulo}</h3>
+                <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full flex-shrink-0">
+                  {stats.tasksCount} tarefa{stats.tasksCount !== 1 ? 's' : ''}
                 </span>
+                <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full flex-shrink-0">
+                  {stats.columnsCount} coluna{stats.columnsCount !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {board.descricao && (
+                <p className="text-sm text-muted-foreground line-clamp-1 ml-12">
+                  {board.descricao}
+                </p>
+              )}
+            </div>
 
-                {teamMembers.length > 0 && (
-                  <div className="flex -space-x-2">
-                    {teamMembers.slice(0, 4).map((member) => (
-                      <Avatar key={member.id} className="w-7 h-7 border-2 border-background" title={member.nome}>
-                        <AvatarImage src={member.foto_perfil || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
-                          {member.nome.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    ))}
-                    {teamMembers.length > 4 && (
-                      <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                        +{teamMembers.length - 4}
-                      </div>
-                    )}
-                  </div>
-                )}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                {format(new Date(board.created_at), "dd MMM yyyy", { locale: ptBR })}
+              </span>
 
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setEditDialogOpen(true)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+              {teamMembers.length > 0 && (
+                <div className="flex -space-x-2">
+                  {teamMembers.slice(0, 4).map((member) => (
+                    <Avatar key={member.id} className="w-7 h-7 border-2 border-background" title={member.nome}>
+                      <AvatarImage src={member.foto_perfil || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
+                        {member.nome.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {teamMembers.length > 4 && (
+                    <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                      +{teamMembers.length - 4}
+                    </div>
+                  )}
                 </div>
+              )}
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setEditDialogOpen(true)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         {editDialog}
         {deleteConfirmDialog}
       </>
@@ -326,36 +332,46 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
 
   return (
     <>
-      <Card
-        className="hover:border-primary/40 hover:shadow-md transition-all duration-200 border-border/50 group cursor-pointer"
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-xl border border-border/50 bg-card cursor-pointer",
+          "group/feature transition-all duration-300",
+          "hover:shadow-lg hover:border-primary/30"
+        )}
         onClick={() => navigate(`/board/${board.id}`)}
       >
-        <CardContent className="p-5">
+        {/* Top gradient line on hover */}
+        <div className="opacity-0 group-hover/feature:opacity-100 transition duration-300 absolute inset-0 h-1 w-full bg-gradient-to-r from-transparent via-primary to-transparent" />
+        
+        {/* Bottom subtle glow */}
+        <div className="opacity-0 group-hover/feature:opacity-40 transition duration-300 absolute bottom-0 inset-x-0 h-px w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+        <div className="relative z-10 p-6">
           {/* Header */}
-          <div className="flex justify-between items-start gap-2 mb-3">
-            <div className="flex items-start gap-2.5 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <BoardIcon className="w-5 h-5 text-primary" />
+          <div className="flex justify-between items-start gap-3 mb-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover/feature:bg-primary/20 transition-colors duration-300">
+                <BoardIcon className="w-6 h-6 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                 <div className="flex items-center gap-1.5">
-                   <h3 className="font-semibold text-foreground truncate leading-tight text-base">
-                     {board.titulo}
-                   </h3>
-                   {board.publico ? (
-                     <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                   ) : (
-                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                   )}
-                 </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-foreground truncate text-lg leading-tight">
+                    {board.titulo}
+                  </h3>
+                  {board.publico ? (
+                    <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                  ) : (
+                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  )}
+                </div>
                 {board.descricao && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                     {board.descricao}
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <div className="flex gap-0.5 opacity-0 group-hover/feature:opacity-100 transition-opacity duration-200 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -376,42 +392,44 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
           </div>
 
           {/* Stats row */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-5">
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Columns3 className="w-3.5 h-3.5" />
-              <span>{stats.columnsCount} coluna{stats.columnsCount !== 1 ? 's' : ''}</span>
+              <Columns3 className="w-4 h-4" />
+              <span className="font-medium">{stats.columnsCount}</span>
+              <span>coluna{stats.columnsCount !== 1 ? 's' : ''}</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-border" />
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <ListChecks className="w-3.5 h-3.5" />
-              <span>{stats.tasksCount} tarefa{stats.tasksCount !== 1 ? 's' : ''}</span>
+              <ListChecks className="w-4 h-4" />
+              <span className="font-medium">{stats.tasksCount}</span>
+              <span>tarefa{stats.tasksCount !== 1 ? 's' : ''}</span>
             </div>
             {teamMembers.length > 0 && (
               <>
                 <div className="w-1 h-1 rounded-full bg-border" />
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Users className="w-3.5 h-3.5" />
-                  <span>{teamMembers.length}</span>
+                  <Users className="w-4 h-4" />
+                  <span className="font-medium">{teamMembers.length}</span>
                 </div>
               </>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center pt-3 border-t border-border/40">
+          <div className="flex justify-between items-center pt-4 border-t border-border/40">
             <div className="flex items-center gap-2">
               {teamMembers.length > 0 && (
-                <div className="flex -space-x-2">
+                <div className="flex -space-x-2.5">
                   {teamMembers.slice(0, 5).map((member) => (
-                    <Avatar key={member.id} className="w-7 h-7 border-2 border-background" title={member.nome}>
+                    <Avatar key={member.id} className="w-8 h-8 border-2 border-card ring-0" title={member.nome}>
                       <AvatarImage src={member.foto_perfil || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                         {member.nome.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   ))}
                   {teamMembers.length > 5 && (
-                    <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                    <div className="w-8 h-8 rounded-full bg-muted border-2 border-card flex items-center justify-center text-xs text-muted-foreground font-semibold">
                       +{teamMembers.length - 5}
                     </div>
                   )}
@@ -422,11 +440,11 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Calendar className="w-3.5 h-3.5" />
               <span>{format(new Date(board.created_at), "dd MMM yyyy", { locale: ptBR })}</span>
-              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover/feature:text-primary group-hover/feature:translate-x-0.5 transition-all duration-300" />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       {editDialog}
       {deleteConfirmDialog}
     </>
