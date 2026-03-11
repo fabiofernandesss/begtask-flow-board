@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { SendIcon, Sparkles, Trash2, X, ArrowUp } from 'lucide-react';
+import { SendIcon, BrainCircuit, Trash2, X, ArrowUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
