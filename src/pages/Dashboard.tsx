@@ -108,7 +108,7 @@ const Dashboard = () => {
             <img src={logoBEG} alt="BEG Inovação" className="h-20 -my-2" />
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-0 bg-muted/30 p-0.5">
+              <div className="flex items-center gap-0 bg-muted/30 rounded-lg p-0.5">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
@@ -157,7 +157,7 @@ const Dashboard = () => {
             
             <Button
               onClick={() => setCreateDialogOpen(true)}
-              className="gap-2 gradient-primary hover:shadow-hover hover:scale-105 transition-all duration-300"
+              className="gap-2 hover:shadow-hover hover:scale-105 transition-all duration-300"
               size="lg"
             >
               <Plus className="w-5 h-5" />
@@ -183,7 +183,7 @@ const Dashboard = () => {
                 </p>
                 <Button
                   onClick={() => setCreateDialogOpen(true)}
-                  className="gap-2 gradient-primary"
+                  className="gap-2"
                 >
                   <Plus className="w-5 h-5" />
                   Criar Primeiro Bloco

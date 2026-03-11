@@ -43,7 +43,7 @@ const Landing = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Link to="/auth">
-              <Button size="lg" className="w-full sm:w-auto gradient-primary hover:shadow-hover hover:scale-105 transition-all duration-300 text-base gap-2">
+              <Button size="lg" className="w-full sm:w-auto hover:shadow-hover hover:scale-105 transition-all duration-300 text-base gap-2">
                 Começar Agora <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
@@ -176,7 +176,7 @@ const Landing = () => {
             Junte-se às empresas que já organizam seus projetos com a BegTask
           </p>
           <Link to="/auth">
-            <Button size="lg" className="gradient-primary hover:shadow-hover hover:scale-110 transition-all duration-300 text-base gap-2">
+            <Button size="lg" className="hover:shadow-hover hover:scale-110 transition-all duration-300 text-base gap-2">
               Começar Gratuitamente <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>
