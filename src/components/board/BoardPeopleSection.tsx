@@ -28,6 +28,7 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
