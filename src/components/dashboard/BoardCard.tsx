@@ -361,7 +361,7 @@ const BoardCard = ({ board, viewMode, onDeleted }: BoardCardProps) => {
         whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          "rounded-[4px] border border-border bg-card cursor-pointer",
+          "rounded-lg border border-border bg-card cursor-pointer",
           "group/card transition-shadow duration-200",
           "hover:shadow-md hover:border-primary/20"
         )}
