@@ -32,10 +32,10 @@ const Hero3D = () => {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
         this.z = Math.random() * 1000;
-        this.size = Math.random() * 2 + 1;
-        this.speedX = (Math.random() - 0.5) * 0.5;
-        this.speedY = (Math.random() - 0.5) * 0.5;
-        this.speedZ = Math.random() * 2 + 1;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.speedY = (Math.random() - 0.5) * 0.3;
+        this.speedZ = Math.random() * 1.5 + 0.5;
       }
 
       update() {
@@ -63,14 +63,14 @@ const Hero3D = () => {
 
         ctx.beginPath();
         ctx.arc(x2d, y2d, size2d, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(129, 35, 197, ${opacity * 0.6})`;
+        ctx.fillStyle = `rgba(1, 74, 166, ${opacity * 0.4})`;
         ctx.fill();
       }
     }
 
     // Create particles
     const particles: Particle[] = [];
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 60; i++) {
       particles.push(new Particle());
     }
 
@@ -96,7 +96,7 @@ const Hero3D = () => {
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(129, 35, 197, ${0.15 * (1 - distance / 150)})`;
+            ctx.strokeStyle = `rgba(1, 74, 166, ${0.08 * (1 - distance / 150)})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
@@ -117,7 +117,7 @@ const Hero3D = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full opacity-30"
+      className="absolute inset-0 w-full h-full opacity-20"
       style={{ mixBlendMode: 'screen' }}
     />
   );
