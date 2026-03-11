@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, Trash2, Search, Loader2, Users, RefreshCw } from "lucide-react";
+import { UserPlus, Trash2, Search, Loader2, Users, RefreshCw, Check, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,33 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [editingPhone, setEditingPhone] = useState<string | null>(null);
+  const [phoneValue, setPhoneValue] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
   const { toast } = useToast();
+
+  const startEditPhone = (member: Profile) => {
+    setEditingPhone(member.id);
+    setPhoneValue(member.telefone || "");
+  };
+
+  const savePhone = async (userId: string) => {
+    setSavingPhone(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ telefone: phoneValue })
+        .eq("id", userId);
+      if (error) throw error;
+      toast({ title: "Telefone atualizado" });
+      setEditingPhone(null);
+      fetchMembers();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   useEffect(() => {
     fetchMembers();
@@ -300,39 +326,71 @@ export default function BoardPeopleSection({ boardId, className, onMembersChange
         ) : (
           <div className="space-y-2">
             {members.map((member: any) => (
-              <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
+              <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors gap-2">
+                <div className="flex items-center gap-3 min-w-0 flex-shrink">
+                  <Avatar className="h-9 w-9 flex-shrink-0">
                     <AvatarImage src={member.foto_perfil || undefined} />
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
                       {getInitials(member.nome)}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {member.nome}
                       {member.isOwner && (
                         <span className="ml-2 text-xs text-primary font-normal">(Dono)</span>
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground">{member.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                   </div>
                 </div>
-                {!member.isOwner && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => removeMember(member.id)}
-                    disabled={removing === member.id}
-                  >
-                    {removing === member.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </Button>
-                )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {editingPhone === member.id ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={phoneValue}
+                        onChange={(e) => setPhoneValue(e.target.value)}
+                        placeholder="(00) 00000-0000"
+                        className="h-8 w-[150px] text-xs"
+                        onKeyDown={(e) => e.key === "Enter" && savePhone(member.id)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary"
+                        onClick={() => savePhone(member.id)}
+                        disabled={savingPhone}
+                      >
+                        {savingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => startEditPhone(member)}
+                    >
+                      <Phone className="w-3 h-3" />
+                      {member.telefone || "Sem telefone"}
+                    </Button>
+                  )}
+                  {!member.isOwner && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => removeMember(member.id)}
+                      disabled={removing === member.id}
+                    >
+                      {removing === member.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
