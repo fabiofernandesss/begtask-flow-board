@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit } from "lucide-react";
+import { ArrowLeft, Plus, LayoutGrid, List, Kanban, MessageSquare, Phone, BrainCircuit, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import Column from "@/components/board/Column";
