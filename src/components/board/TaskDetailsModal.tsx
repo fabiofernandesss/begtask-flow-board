@@ -71,7 +71,7 @@ const priorityColors = {
   alta: "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
-const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsModalProps) => {
+const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate, boardTitle }: TaskDetailsModalProps) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [participants, setParticipants] = useState<TaskParticipant[]>([]);

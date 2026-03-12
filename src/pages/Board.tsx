@@ -973,6 +973,7 @@ const Board = () => {
         open={taskDetailsOpen}
         onOpenChange={setTaskDetailsOpen}
         onUpdate={handleTaskUpdate}
+        boardTitle={board?.titulo}
       />
 
       {/* Floating Chat Button */}
