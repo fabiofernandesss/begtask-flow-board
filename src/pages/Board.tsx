@@ -668,11 +668,34 @@ const Board = () => {
       // Buscar dados da tarefa antes de excluir
       const { data: taskData, error: taskError } = await supabase
         .from("tasks")
-        .select("id, titulo, responsavel_id")
+        .select("id, titulo, descricao, responsavel_id, column_id")
         .eq("id", taskId)
         .single();
 
       if (taskError) throw taskError;
+
+      // Buscar nome da coluna
+      let columnTitle = '';
+      if (taskData?.column_id) {
+        const { data: colData } = await supabase
+          .from("columns")
+          .select("titulo")
+          .eq("id", taskData.column_id)
+          .single();
+        columnTitle = colData?.titulo || '';
+      }
+
+      // Buscar quem excluiu
+      let deletedByName = '';
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession?.user?.id) {
+        const { data: moverProfile } = await supabase
+          .from("profiles")
+          .select("nome")
+          .eq("id", currentSession.user.id)
+          .single();
+        deletedByName = moverProfile?.nome || '';
+      }
 
       // Buscar dados do responsável se existir
       let responsavelData = null;
@@ -695,8 +718,6 @@ const Board = () => {
         }
       }
 
-      if (taskError) throw taskError;
-
       // Excluir a tarefa
       const { error } = await supabase.from("tasks").delete().eq("id", taskId);
       if (error) throw error;
@@ -708,11 +729,14 @@ const Board = () => {
             responsavelData.telefone,
             responsavelData.email,
             responsavelData.nome,
-            taskData.titulo
+            taskData.titulo,
+            board?.titulo,
+            columnTitle,
+            deletedByName,
+            taskData.descricao
           );
         } catch (notificationError) {
           console.error("Erro ao enviar notificação:", notificationError);
-          // Não falha a operação principal se a notificação falhar
         }
       }
       
