@@ -62,6 +62,7 @@ interface TaskDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  boardTitle?: string;
 }
 
 const priorityColors = {
