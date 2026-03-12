@@ -114,6 +114,45 @@ class NotificationService {
     }
   }
 
+  async sendWhatsAppImage(phone: string, imageUrl: string, caption?: string): Promise<boolean> {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phone);
+      const apiUrl = import.meta.env.VITE_WHATSAPP_API_URL;
+      const authToken = import.meta.env.VITE_WHATSAPP_AUTH_TOKEN;
+
+      if (!apiUrl || !authToken) {
+        console.warn('WhatsApp API não configurada para envio de imagem');
+        return false;
+      }
+
+      // Derivar URL de envio de imagem a partir da URL base
+      const imageApiUrl = apiUrl.replace('/recursive-send-message', '/send-image');
+
+      const response = await fetch(imageApiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': authToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jid: formattedPhone,
+          caption: caption || '',
+          imageurl: imageUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log(`✅ Imagem enviada para ${formattedPhone}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending WhatsApp image:', error);
+      return false;
+    }
+  }
+
   async sendWhatsAppToMultiple(phones: string[], message: string): Promise<boolean> {
     try {
       if (!phones || phones.length === 0) {
