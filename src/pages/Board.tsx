@@ -638,7 +638,8 @@ const Board = () => {
                 profileData.telefone,
                 String(userEmail || ''),
                 columnData?.titulo || '',
-                task.titulo
+                task.titulo,
+                board?.titulo
               );
             }
           } catch (whatsappError) {
