@@ -114,6 +114,45 @@ class NotificationService {
     }
   }
 
+  async sendWhatsAppImage(phone: string, imageUrl: string, caption?: string): Promise<boolean> {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phone);
+      const apiUrl = import.meta.env.VITE_WHATSAPP_API_URL;
+      const authToken = import.meta.env.VITE_WHATSAPP_AUTH_TOKEN;
+
+      if (!apiUrl || !authToken) {
+        console.warn('WhatsApp API não configurada para envio de imagem');
+        return false;
+      }
+
+      // Derivar URL de envio de imagem a partir da URL base
+      const imageApiUrl = apiUrl.replace('/recursive-send-message', '/send-image');
+
+      const response = await fetch(imageApiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': authToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jid: formattedPhone,
+          caption: caption || '',
+          imageurl: imageUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log(`✅ Imagem enviada para ${formattedPhone}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending WhatsApp image:', error);
+      return false;
+    }
+  }
+
   async sendWhatsAppToMultiple(phones: string[], message: string): Promise<boolean> {
     try {
       if (!phones || phones.length === 0) {
@@ -310,49 +349,79 @@ class NotificationService {
     email: string | null,
     taskTitle: string,
     fromColumn: string,
-    toColumn: string
+    toColumn: string,
+    boardTitle?: string,
+    movedByName?: string,
+    taskDescription?: string | null,
+    taskImages?: string[]
   ): Promise<void> {
-    console.log("🚀 NotificationService.sendTaskMovedNotification iniciado");
-    console.log("📞 Telefone:", phone);
-    console.log("📧 Email:", email);
-    console.log("👤 Nome:", responsavelNome);
-    console.log("📋 Tarefa:", taskTitle);
-    console.log("🔄 De:", fromColumn, "Para:", toColumn);
+    console.log("NotificationService.sendTaskMovedNotification iniciado");
+    console.log("Telefone:", phone);
+    console.log("Email:", email);
+    console.log("Nome:", responsavelNome);
+    console.log("Tarefa:", taskTitle);
+    console.log("De:", fromColumn, "Para:", toColumn);
+    console.log("Projeto:", boardTitle);
+    console.log("Movido por:", movedByName);
+    console.log("Imagens:", taskImages?.length || 0);
     
-    const whatsappMessage = `📋 *Tarefa Movida*\n\nOlá ${responsavelNome}!\n\nSua tarefa foi movida:\n\n📋 *${taskTitle}*\n\nDe: ${fromColumn}\nPara: ${toColumn}\n\n✅ BegTask - Gestão de Tarefas`;
+    const whatsappMessage = [
+      `*Tarefa Movida*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      boardTitle ? `*Projeto:* ${boardTitle}` : null,
+      `*Tarefa:* ${taskTitle}`,
+      taskDescription ? `*Descricao:* ${taskDescription}` : null,
+      `*De:* ${fromColumn}`,
+      `*Para:* ${toColumn}`,
+      movedByName ? `*Movido por:* ${movedByName}` : null,
+      ``,
+      `Acesse o BegTask para mais detalhes.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
     
     const emailSubject = `Tarefa Movida: ${taskTitle}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #3b82f6;">📋 Tarefa Movida</h2>
+        <h2 style="color: #3b82f6;">Tarefa Movida</h2>
         <p>Olá <strong>${responsavelNome}</strong>!</p>
-        <p>Sua tarefa foi movida:</p>
+        ${boardTitle ? `<p><strong>Projeto:</strong> ${boardTitle}</p>` : ''}
         <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #1e40af;">📋 ${taskTitle}</h3>
+          <h3 style="margin: 0; color: #1e40af;">${taskTitle}</h3>
+          ${taskDescription ? `<p style="margin: 10px 0 0 0; color: #374151;">${taskDescription}</p>` : ''}
           <p style="margin: 10px 0 0 0; color: #1e40af;"><strong>De:</strong> ${fromColumn}</p>
           <p style="margin: 5px 0 0 0; color: #1e40af;"><strong>Para:</strong> ${toColumn}</p>
+          ${movedByName ? `<p style="margin: 5px 0 0 0; color: #1e40af;"><strong>Movido por:</strong> ${movedByName}</p>` : ''}
         </div>
         <p>Acesse o sistema para visualizar o status atualizado da tarefa.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
       </div>
     `;
 
     try {
+      // Enviar imagens primeiro via WhatsApp (se houver)
+      if (phone && taskImages && taskImages.length > 0) {
+        for (const imageUrl of taskImages) {
+          const caption = `*${taskTitle}* - Imagem da tarefa`;
+          await this.sendWhatsAppImage(phone, imageUrl, caption);
+        }
+      }
+
+      // Enviar mensagem de texto
       if (phone && email) {
-        console.log("📱📧 Enviando para ambos: telefone e email");
         await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
       } else if (phone) {
-        console.log("📱 Enviando apenas WhatsApp");
         await this.sendWhatsApp(phone, whatsappMessage);
       } else if (email) {
-        console.log("📧 Enviando apenas email");
         await this.sendEmail(email, emailSubject, emailHtml);
       } else {
-        console.log("⚠️ Nenhum meio de contato disponível");
+        console.log("Nenhum meio de contato disponivel");
       }
-      console.log("✅ NotificationService.sendTaskMovedNotification concluído com sucesso");
+      console.log("NotificationService.sendTaskMovedNotification concluido");
     } catch (error) {
-      console.error("❌ Erro em NotificationService.sendTaskMovedNotification:", error);
+      console.error("Erro em NotificationService.sendTaskMovedNotification:", error);
       throw error;
     }
   }

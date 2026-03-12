@@ -410,13 +410,35 @@ const Board = () => {
               console.log("👤 Perfis encontrados:", profilesData?.length || 0);
               console.log("📧 Emails encontrados:", emailsData?.length || 0);
 
+              // Obter nome do usuário que moveu
+              const { data: { session: currentSession } } = await supabase.auth.getSession();
+              let movedByName = '';
+              if (currentSession?.user?.id) {
+                const { data: moverProfile } = await supabase
+                  .from("profiles")
+                  .select("nome")
+                  .eq("id", currentSession.user.id)
+                  .single();
+                movedByName = moverProfile?.nome || '';
+              }
+
+              // Coletar imagens da tarefa
+              const taskImages: string[] = [];
+              for (let i = 1; i <= 10; i++) {
+                const imgKey = `image_url_${i}` as keyof Task;
+                const imgVal = movedTask[imgKey];
+                if (imgVal && typeof imgVal === 'string') {
+                  taskImages.push(imgVal);
+                }
+              }
+
               // Enviar notificação para cada usuário
               let notificationsSent = 0;
               for (const profile of (profilesData || [])) {
                 const userEmail = emailsData?.find((e: any) => e.id === profile.id)?.email;
                 
                 if (profile.telefone || userEmail) {
-                  console.log(`📤 Enviando notificação para ${profile.nome}...`);
+                  console.log(`Enviando notificação para ${profile.nome}...`);
                   
                   await notificationService.sendTaskMovedNotification(
                     profile.nome,
@@ -424,13 +446,17 @@ const Board = () => {
                     String(userEmail || ''),
                     movedTask.titulo,
                     sourceCol.titulo,
-                    destCol.titulo
+                    destCol.titulo,
+                    board?.titulo,
+                    movedByName,
+                    movedTask.descricao,
+                    taskImages
                   );
                   
                   notificationsSent++;
-                  console.log(`✅ Notificação enviada para ${profile.nome}`);
+                  console.log(`Notificação enviada para ${profile.nome}`);
                 } else {
-                  console.log(`⚠️ ${profile.nome} sem dados de contato`);
+                  console.log(`${profile.nome} sem dados de contato`);
                 }
               }
 
