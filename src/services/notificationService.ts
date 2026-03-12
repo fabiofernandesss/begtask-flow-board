@@ -243,104 +243,281 @@ class NotificationService {
   }
 
   // Métodos específicos para notificações de tarefas
-  async notifyTaskCreated(phone: string, email: string, responsavelNome: string, taskTitle: string): Promise<void> {
-    const whatsappMessage = `🎯 *Nova Tarefa Atribuída*\n\nOlá ${responsavelNome}!\n\nVocê foi designado(a) para uma nova tarefa:\n\n📋 *${taskTitle}*\n\nAcesse o BegTask para mais detalhes.\n\n✅ BegTask - Gestão de Tarefas`;
+  async notifyTaskCreated(
+    phone: string | null,
+    email: string | null,
+    responsavelNome: string,
+    taskTitle: string,
+    boardTitle?: string,
+    columnTitle?: string,
+    createdByName?: string,
+    taskDescription?: string | null
+  ): Promise<void> {
+    const whatsappMessage = [
+      `*Nova Tarefa Atribuida*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      boardTitle ? `*Projeto:* ${boardTitle}` : null,
+      columnTitle ? `*Coluna:* ${columnTitle}` : null,
+      `*Tarefa:* ${taskTitle}`,
+      taskDescription ? `*Descricao:* ${taskDescription}` : null,
+      createdByName ? `*Criado por:* ${createdByName}` : null,
+      ``,
+      `Acesse o BegTask para mais detalhes.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
     
     const emailSubject = `Nova Tarefa Atribuída: ${taskTitle}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">🎯 Nova Tarefa Atribuída</h2>
+        <h2 style="color: #2563eb;">Nova Tarefa Atribuída</h2>
         <p>Olá <strong>${responsavelNome}</strong>!</p>
         <p>Você foi designado(a) para uma nova tarefa:</p>
+        ${boardTitle ? `<p><strong>Projeto:</strong> ${boardTitle}</p>` : ''}
+        ${columnTitle ? `<p><strong>Coluna:</strong> ${columnTitle}</p>` : ''}
         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #1f2937;">📋 ${taskTitle}</h3>
+          <h3 style="margin: 0; color: #1f2937;">${taskTitle}</h3>
+          ${taskDescription ? `<p style="margin: 10px 0 0 0; color: #374151;">${taskDescription}</p>` : ''}
         </div>
-        <p>Acesse o BegTask para mais detalhes e começar a trabalhar na tarefa.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
+        ${createdByName ? `<p><strong>Criado por:</strong> ${createdByName}</p>` : ''}
+        <p>Acesse o BegTask para mais detalhes.</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
       </div>
     `;
 
     await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
   }
 
-  async notifyTaskUpdated(phone: string, email: string, responsavelNome: string, taskTitle: string): Promise<void> {
-    const whatsappMessage = `📝 *Tarefa Atualizada*\n\nOlá ${responsavelNome}!\n\nSua tarefa foi atualizada:\n\n📋 *${taskTitle}*\n\nVerifique as alterações no BegTask.\n\n✅ BegTask - Gestão de Tarefas`;
+  async notifyTaskUpdated(
+    phone: string | null,
+    email: string | null,
+    responsavelNome: string,
+    taskTitle: string,
+    boardTitle?: string,
+    columnTitle?: string,
+    updatedByName?: string,
+    taskDescription?: string | null
+  ): Promise<void> {
+    const whatsappMessage = [
+      `*Tarefa Atualizada*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      boardTitle ? `*Projeto:* ${boardTitle}` : null,
+      columnTitle ? `*Coluna:* ${columnTitle}` : null,
+      `*Tarefa:* ${taskTitle}`,
+      taskDescription ? `*Descricao:* ${taskDescription}` : null,
+      updatedByName ? `*Atualizado por:* ${updatedByName}` : null,
+      ``,
+      `Verifique as alteracoes no BegTask.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
     
     const emailSubject = `Tarefa Atualizada: ${taskTitle}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #f59e0b;">📝 Tarefa Atualizada</h2>
+        <h2 style="color: #f59e0b;">Tarefa Atualizada</h2>
         <p>Olá <strong>${responsavelNome}</strong>!</p>
         <p>Sua tarefa foi atualizada:</p>
+        ${boardTitle ? `<p><strong>Projeto:</strong> ${boardTitle}</p>` : ''}
+        ${columnTitle ? `<p><strong>Coluna:</strong> ${columnTitle}</p>` : ''}
         <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #92400e;">📋 ${taskTitle}</h3>
+          <h3 style="margin: 0; color: #92400e;">${taskTitle}</h3>
+          ${taskDescription ? `<p style="margin: 10px 0 0 0; color: #374151;">${taskDescription}</p>` : ''}
         </div>
-        <p>Verifique as alterações no BegTask para continuar trabalhando na tarefa.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
+        ${updatedByName ? `<p><strong>Atualizado por:</strong> ${updatedByName}</p>` : ''}
+        <p>Verifique as alterações no BegTask.</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
       </div>
     `;
 
     await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
   }
 
-  async notifyTaskDeleted(phone: string, email: string, responsavelNome: string, taskTitle: string): Promise<void> {
-    const whatsappMessage = `🗑️ *Tarefa Excluída*\n\nOlá ${responsavelNome}!\n\nA seguinte tarefa foi excluída:\n\n📋 *${taskTitle}*\n\n✅ BegTask - Gestão de Tarefas`;
+  async notifyTaskDeleted(
+    phone: string | null,
+    email: string | null,
+    responsavelNome: string,
+    taskTitle: string,
+    boardTitle?: string,
+    columnTitle?: string,
+    deletedByName?: string,
+    taskDescription?: string | null
+  ): Promise<void> {
+    const whatsappMessage = [
+      `*Tarefa Excluida*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      boardTitle ? `*Projeto:* ${boardTitle}` : null,
+      columnTitle ? `*Coluna:* ${columnTitle}` : null,
+      `*Tarefa:* ${taskTitle}`,
+      taskDescription ? `*Descricao:* ${taskDescription}` : null,
+      deletedByName ? `*Excluido por:* ${deletedByName}` : null,
+      ``,
+      `Esta tarefa foi removida do sistema.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
     
     const emailSubject = `Tarefa Excluída: ${taskTitle}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc2626;">🗑️ Tarefa Excluída</h2>
+        <h2 style="color: #dc2626;">Tarefa Excluída</h2>
         <p>Olá <strong>${responsavelNome}</strong>!</p>
         <p>A seguinte tarefa foi excluída:</p>
+        ${boardTitle ? `<p><strong>Projeto:</strong> ${boardTitle}</p>` : ''}
+        ${columnTitle ? `<p><strong>Coluna:</strong> ${columnTitle}</p>` : ''}
         <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #991b1b;">📋 ${taskTitle}</h3>
+          <h3 style="margin: 0; color: #991b1b;">${taskTitle}</h3>
+          ${taskDescription ? `<p style="margin: 10px 0 0 0; color: #374151;">${taskDescription}</p>` : ''}
         </div>
+        ${deletedByName ? `<p><strong>Excluído por:</strong> ${deletedByName}</p>` : ''}
         <p>Esta tarefa não está mais disponível no sistema.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
       </div>
     `;
 
     await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
   }
 
-  async notifyColumnDeleted(phone: string, email: string, responsavelNome: string, columnTitle: string, taskTitle: string): Promise<void> {
-    const whatsappMessage = `📂 *Coluna Excluída*\n\nOlá ${responsavelNome}!\n\nA coluna "${columnTitle}" foi excluída, incluindo sua tarefa:\n\n📋 *${taskTitle}*\n\n✅ BegTask - Gestão de Tarefas`;
+  async notifyColumnDeleted(
+    responsavelNome: string,
+    phone: string | null,
+    email: string | null,
+    columnTitle: string,
+    taskTitle: string,
+    boardTitle?: string,
+    deletedByName?: string
+  ): Promise<void> {
+    const whatsappMessage = [
+      `*Coluna Excluida*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      boardTitle ? `*Projeto:* ${boardTitle}` : null,
+      `*Coluna:* ${columnTitle}`,
+      `*Tarefa removida:* ${taskTitle}`,
+      deletedByName ? `*Excluido por:* ${deletedByName}` : null,
+      ``,
+      `A coluna foi excluida e sua tarefa foi removida junto.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
     
     const emailSubject = `Coluna Excluída: ${columnTitle}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc2626;">📂 Coluna Excluída</h2>
+        <h2 style="color: #dc2626;">Coluna Excluída</h2>
         <p>Olá <strong>${responsavelNome}</strong>!</p>
+        ${boardTitle ? `<p><strong>Projeto:</strong> ${boardTitle}</p>` : ''}
         <p>A coluna <strong>"${columnTitle}"</strong> foi excluída, incluindo sua tarefa:</p>
         <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #991b1b;">📋 ${taskTitle}</h3>
+          <h3 style="margin: 0; color: #991b1b;">${taskTitle}</h3>
         </div>
+        ${deletedByName ? `<p><strong>Excluído por:</strong> ${deletedByName}</p>` : ''}
         <p>Esta tarefa não está mais disponível no sistema.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
       </div>
     `;
 
     await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
   }
 
-  async notifyBoardDeleted(phone: string, email: string, responsavelNome: string, boardTitle: string, taskTitle: string): Promise<void> {
-    const whatsappMessage = `🗂️ *Bloco Excluído*\n\nOlá ${responsavelNome}!\n\nO bloco "${boardTitle}" foi excluído, incluindo sua tarefa:\n\n📋 *${taskTitle}*\n\n✅ BegTask - Gestão de Tarefas`;
+  async notifyBoardDeleted(
+    responsavelNome: string,
+    phone: string | null,
+    email: string | null,
+    boardTitle: string,
+    taskTitle: string,
+    deletedByName?: string
+  ): Promise<void> {
+    const whatsappMessage = [
+      `*Projeto Excluido*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      `*Projeto:* ${boardTitle}`,
+      `*Tarefa removida:* ${taskTitle}`,
+      deletedByName ? `*Excluido por:* ${deletedByName}` : null,
+      ``,
+      `O projeto foi excluido e sua tarefa foi removida junto.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
     
-    const emailSubject = `Bloco Excluído: ${boardTitle}`;
+    const emailSubject = `Projeto Excluído: ${boardTitle}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc2626;">🗂️ Bloco Excluído</h2>
+        <h2 style="color: #dc2626;">Projeto Excluído</h2>
         <p>Olá <strong>${responsavelNome}</strong>!</p>
-        <p>O bloco <strong>"${boardTitle}"</strong> foi excluído, incluindo sua tarefa:</p>
+        <p>O projeto <strong>"${boardTitle}"</strong> foi excluído, incluindo sua tarefa:</p>
         <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #991b1b;">📋 ${taskTitle}</h3>
+          <h3 style="margin: 0; color: #991b1b;">${taskTitle}</h3>
         </div>
+        ${deletedByName ? `<p><strong>Excluído por:</strong> ${deletedByName}</p>` : ''}
         <p>Esta tarefa não está mais disponível no sistema.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
       </div>
     `;
 
     await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
+  }
+
+  async sendTaskAssignedNotification(
+    responsavelNome: string,
+    phone: string | null,
+    email: string | null,
+    taskTitle: string,
+    boardTitle?: string,
+    columnTitle?: string,
+    assignedByName?: string,
+    taskDescription?: string | null
+  ): Promise<void> {
+    const whatsappMessage = [
+      `*Nova Tarefa Atribuida*`,
+      ``,
+      `Ola ${responsavelNome},`,
+      ``,
+      boardTitle ? `*Projeto:* ${boardTitle}` : null,
+      columnTitle ? `*Coluna:* ${columnTitle}` : null,
+      `*Tarefa:* ${taskTitle}`,
+      taskDescription ? `*Descricao:* ${taskDescription}` : null,
+      assignedByName ? `*Atribuido por:* ${assignedByName}` : null,
+      ``,
+      `Acesse o BegTask para mais detalhes.`,
+      ``,
+      `BegTask - Gestao de Tarefas`,
+    ].filter(Boolean).join('\n');
+    
+    const emailSubject = `Nova Tarefa Atribuída: ${taskTitle}`;
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #059669;">Nova Tarefa Atribuída</h2>
+        <p>Olá <strong>${responsavelNome}</strong>!</p>
+        <p>Você foi designado(a) para uma nova tarefa:</p>
+        ${boardTitle ? `<p><strong>Projeto:</strong> ${boardTitle}</p>` : ''}
+        ${columnTitle ? `<p><strong>Coluna:</strong> ${columnTitle}</p>` : ''}
+        <div style="background-color: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0; color: #065f46;">${taskTitle}</h3>
+          ${taskDescription ? `<p style="margin: 10px 0 0 0; color: #374151;">${taskDescription}</p>` : ''}
+        </div>
+        ${assignedByName ? `<p><strong>Atribuído por:</strong> ${assignedByName}</p>` : ''}
+        <p>Acesse o sistema para visualizar todos os detalhes.</p>
+        <p style="color: #6b7280; font-size: 14px;">BegTask - Gestão de Tarefas</p>
+      </div>
+    `;
+
+    if (phone && email) {
+      await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
+    } else if (phone) {
+      await this.sendWhatsApp(phone, whatsappMessage);
+    } else if (email) {
+      await this.sendEmail(email, emailSubject, emailHtml);
+    }
   }
 
   async sendTaskMovedNotification(
@@ -356,14 +533,6 @@ class NotificationService {
     taskImages?: string[]
   ): Promise<void> {
     console.log("NotificationService.sendTaskMovedNotification iniciado");
-    console.log("Telefone:", phone);
-    console.log("Email:", email);
-    console.log("Nome:", responsavelNome);
-    console.log("Tarefa:", taskTitle);
-    console.log("De:", fromColumn, "Para:", toColumn);
-    console.log("Projeto:", boardTitle);
-    console.log("Movido por:", movedByName);
-    console.log("Imagens:", taskImages?.length || 0);
     
     const whatsappMessage = [
       `*Tarefa Movida*`,
@@ -401,7 +570,6 @@ class NotificationService {
     `;
 
     try {
-      // Enviar imagens primeiro via WhatsApp (se houver)
       if (phone && taskImages && taskImages.length > 0) {
         for (const imageUrl of taskImages) {
           const caption = `*${taskTitle}* - Imagem da tarefa`;
@@ -409,51 +577,17 @@ class NotificationService {
         }
       }
 
-      // Enviar mensagem de texto
       if (phone && email) {
         await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
       } else if (phone) {
         await this.sendWhatsApp(phone, whatsappMessage);
       } else if (email) {
         await this.sendEmail(email, emailSubject, emailHtml);
-      } else {
-        console.log("Nenhum meio de contato disponivel");
       }
       console.log("NotificationService.sendTaskMovedNotification concluido");
     } catch (error) {
       console.error("Erro em NotificationService.sendTaskMovedNotification:", error);
       throw error;
-    }
-  }
-
-  async sendTaskAssignedNotification(
-    responsavelNome: string,
-    phone: string | null,
-    email: string | null,
-    taskTitle: string
-  ): Promise<void> {
-    const whatsappMessage = `🎯 *Nova Tarefa Atribuída!*\n\nOlá ${responsavelNome}!\n\nVocê foi designado(a) para a tarefa:\n📋 *${taskTitle}*\n\nAcesse o sistema para mais detalhes.\n\n✅ BegTask - Gestão de Tarefas`;
-    
-    const emailSubject = `Nova Tarefa Atribuída: ${taskTitle}`;
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #059669;">🎯 Nova Tarefa Atribuída!</h2>
-        <p>Olá <strong>${responsavelNome}</strong>!</p>
-        <p>Você foi designado(a) para uma nova tarefa:</p>
-        <div style="background-color: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin: 0; color: #065f46;">📋 ${taskTitle}</h3>
-        </div>
-        <p>Acesse o sistema para visualizar todos os detalhes e começar a trabalhar nesta tarefa.</p>
-        <p style="color: #6b7280; font-size: 14px;">✅ BegTask - Gestão de Tarefas</p>
-      </div>
-    `;
-
-    if (phone && email) {
-      await this.sendBoth(phone, email, whatsappMessage, emailSubject, emailHtml);
-    } else if (phone) {
-      await this.sendWhatsApp(phone, whatsappMessage);
-    } else if (email) {
-      await this.sendEmail(email, emailSubject, emailHtml);
     }
   }
 }

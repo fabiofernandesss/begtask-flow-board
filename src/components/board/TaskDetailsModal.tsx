@@ -62,6 +62,7 @@ interface TaskDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  boardTitle?: string;
 }
 
 const priorityColors = {
@@ -70,7 +71,7 @@ const priorityColors = {
   alta: "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
-const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsModalProps) => {
+const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate, boardTitle }: TaskDetailsModalProps) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [participants, setParticipants] = useState<TaskParticipant[]>([]);
@@ -320,7 +321,11 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
           profile.nome,
           profile.telefone,
           profile.email || null,
-          task.titulo
+          task.titulo,
+          boardTitle,
+          undefined,
+          currentUser?.nome,
+          task.descricao
         );
         console.log("✅ Notificação enviada com sucesso!");
       } catch (notificationError) {
@@ -416,7 +421,11 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate }: TaskDetailsMod
             participant.user.telefone,
             participant.user.email || null,
             participant.user.nome,
-            editedTask.titulo
+            editedTask.titulo,
+            boardTitle,
+            undefined,
+            currentUser?.nome,
+            editedTask.descricao
           );
           console.log(`✅ Notificação enviada para ${participant.user.nome}`);
         } catch (notificationError) {
