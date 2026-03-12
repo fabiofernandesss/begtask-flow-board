@@ -178,63 +178,32 @@ class WhatsAppService {
    * @returns Promise com resultado do envio
    */
   async notifyTaskDeleted(phoneNumbers: string[], taskTitle: string): Promise<WhatsAppResponse> {
-    const message = `🗑️ A tarefa "${taskTitle}" foi excluída.`;
+    const message = `*Tarefa Excluida*\n\n*Tarefa:* ${taskTitle}\n\nEsta tarefa foi removida do sistema.\n\nBegTask - Gestao de Tarefas`;
     
     return this.sendMultipleMessages(phoneNumbers, message);
   }
 
-  /**
-   * Envia notificação quando uma tarefa muda de coluna
-   * @param phoneNumbers - Números dos membros da tarefa
-   * @param taskTitle - Título da tarefa
-   * @param fromColumn - Nome da coluna de origem
-   * @param toColumn - Nome da coluna de destino
-   * @returns Promise com resultado do envio
-   */
   async notifyTaskMoved(phoneNumbers: string[], taskTitle: string, fromColumn: string, toColumn: string): Promise<WhatsAppResponse> {
-    const message = `📋 A tarefa "${taskTitle}" foi movida de "${fromColumn}" para "${toColumn}".`;
+    const message = `*Tarefa Movida*\n\n*Tarefa:* ${taskTitle}\n*De:* ${fromColumn}\n*Para:* ${toColumn}\n\nBegTask - Gestao de Tarefas`;
     
     return this.sendMultipleMessages(phoneNumbers, message);
   }
 
-  /**
-   * Envia notificação quando uma coluna é excluída
-   * @param phoneNumber - Número do responsável pela tarefa
-   * @param userName - Nome do responsável
-   * @param columnTitle - Título da coluna excluída
-   * @param taskTitle - Título da tarefa que estava na coluna
-   * @returns Promise com resultado do envio
-   */
   async notifyColumnDeleted(phoneNumber: string, userName: string, columnTitle: string, taskTitle: string): Promise<WhatsAppResponse> {
-    const message = `📂 Olá ${userName}! A coluna "${columnTitle}" foi excluída e sua tarefa "${taskTitle}" foi removida junto.`;
+    const message = `*Coluna Excluida*\n\nOla ${userName},\n\n*Coluna:* ${columnTitle}\n*Tarefa removida:* ${taskTitle}\n\nA coluna foi excluida e sua tarefa foi removida junto.\n\nBegTask - Gestao de Tarefas`;
     
     return this.sendSingleMessage(phoneNumber, message);
   }
 
-  /**
-   * Envia notificação quando um board é excluído
-   * @param phoneNumber - Número do responsável pela tarefa
-   * @param userName - Nome do responsável
-   * @param boardTitle - Título do board excluído
-   * @param taskTitle - Título da tarefa que estava no board
-   * @returns Promise com resultado do envio
-   */
   async notifyBoardDeleted(phoneNumber: string, userName: string, boardTitle: string, taskTitle: string): Promise<WhatsAppResponse> {
-    const message = `📋 Olá ${userName}! O board "${boardTitle}" foi excluído e sua tarefa "${taskTitle}" foi removida junto.`;
+    const message = `*Projeto Excluido*\n\nOla ${userName},\n\n*Projeto:* ${boardTitle}\n*Tarefa removida:* ${taskTitle}\n\nO projeto foi excluido e sua tarefa foi removida junto.\n\nBegTask - Gestao de Tarefas`;
     
     return this.sendSingleMessage(phoneNumber, message);
   }
 
-  /**
-   * Envia notificação quando uma coluna ou board é excluído
-   * @param phoneNumbers - Números dos usuários afetados
-   * @param itemTitle - Título da coluna ou board excluído
-   * @param itemType - Tipo do item ('coluna' ou 'board')
-   * @returns Promise com resultado do envio
-   */
   async notifyItemDeleted(phoneNumbers: string[], itemTitle: string, itemType: 'coluna' | 'board'): Promise<WhatsAppResponse> {
-    const emoji = itemType === 'coluna' ? '📂' : '📋';
-    const message = `${emoji} ${itemType === 'coluna' ? 'A coluna' : 'O board'} "${itemTitle}" foi ${itemType === 'coluna' ? 'excluída' : 'excluído'}.`;
+    const label = itemType === 'coluna' ? 'Coluna' : 'Projeto';
+    const message = `*${label} Excluido*\n\n*${label}:* ${itemTitle}\n\nBegTask - Gestao de Tarefas`;
     
     return this.sendMultipleMessages(phoneNumbers, message);
   }
