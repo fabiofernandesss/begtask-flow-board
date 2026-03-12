@@ -421,7 +421,11 @@ const TaskDetailsModal = ({ task, open, onOpenChange, onUpdate, boardTitle }: Ta
             participant.user.telefone,
             participant.user.email || null,
             participant.user.nome,
-            editedTask.titulo
+            editedTask.titulo,
+            boardTitle,
+            undefined,
+            currentUser?.nome,
+            editedTask.descricao
           );
           console.log(`✅ Notificação enviada para ${participant.user.nome}`);
         } catch (notificationError) {
