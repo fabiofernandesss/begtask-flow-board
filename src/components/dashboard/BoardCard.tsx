@@ -50,7 +50,7 @@ const BOARD_ICONS = [LayoutGrid, Briefcase, FolderKanban, ClipboardList, Target,
 
 const ICON_COLORS = Array(10).fill("text-white");
 
-const ICON_BG = Array(10).fill("bg-[hsl(271,76%,44%)]");
+const ICON_BG = Array(10).fill("bg-primary");
 
 const getBoardHash = (boardId: string) => {
   let hash = 0;
