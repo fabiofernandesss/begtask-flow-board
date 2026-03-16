@@ -178,7 +178,7 @@ All colors MUST be HSL.
     --sidebar-ring: 220 74% 55%;
 
     /* Gradients - Ciano → Azul → Roxo */
-    --gradient-primary: linear-gradient(90deg, hsl(200 100% 40%) 0%, hsl(214 100% 30%) 40%, hsl(271 76% 48%) 75%, hsl(293 100% 54%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(220 74% 55%) 0%, hsl(222 77% 50%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 11%) 0%, hsl(0 0% 13%) 100%);
 
