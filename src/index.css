@@ -24,10 +24,10 @@ All colors MUST be HSL.
     --popover-foreground: 220 20% 10%;
 
     /* Primary - Azul Royal Vibrante #0056D2 */
-    --primary: 214 100% 41%;
+    --primary: 220 74% 48%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 100% 34%;
-    --primary-light: 214 100% 96%;
+    --primary-hover: 222 77% 40%;
+    --primary-light: 220 74% 96%;
 
     /* Accent Cyan - #00E5FF */
     --accent-cyan: 187 100% 50%;
@@ -69,7 +69,7 @@ All colors MUST be HSL.
     /* Border and input */
     --border: 220 15% 90%;
     --input: 220 15% 90%;
-    --ring: 214 100% 41%;
+    --ring: 220 74% 48%;
 
     /* Radius - compact design */
     --radius: 12px;
@@ -77,15 +77,15 @@ All colors MUST be HSL.
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 20% 10%;
-    --sidebar-primary: 214 100% 41%;
+    --sidebar-primary: 220 74% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 187 100% 50%;
     --sidebar-accent-foreground: 220 20% 10%;
     --sidebar-border: 220 15% 90%;
-    --sidebar-ring: 214 100% 41%;
+    --sidebar-ring: 220 74% 48%;
 
     /* Gradients - Ciano → Azul → Roxo */
-    --gradient-primary: linear-gradient(90deg, hsl(200 100% 35%) 0%, hsl(214 100% 26%) 40%, hsl(271 76% 44%) 75%, hsl(293 100% 49%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(220 74% 48%) 0%, hsl(222 77% 47%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(214 20% 98%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(214 20% 99%) 100%);
 
@@ -93,8 +93,8 @@ All colors MUST be HSL.
     --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 2px 8px hsl(214 100% 41% / 0.08);
-    --shadow-hover: 0 8px 24px hsl(214 100% 41% / 0.12);
+    --shadow-card: 0 2px 8px hsl(220 74% 48% / 0.08);
+    --shadow-hover: 0 8px 24px hsl(220 74% 48% / 0.12);
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -129,10 +129,10 @@ All colors MUST be HSL.
     --popover-foreground: 0 0% 98%;
 
     /* Primary - Azul Royal mais claro no dark */
-    --primary: 214 100% 50%;
+    --primary: 220 74% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 100% 41%;
-    --primary-light: 214 100% 15%;
+    --primary-hover: 222 77% 48%;
+    --primary-light: 220 74% 15%;
 
     /* Accent Cyan */
     --accent-cyan: 187 100% 50%;
@@ -166,19 +166,19 @@ All colors MUST be HSL.
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 214 100% 50%;
+    --ring: 220 74% 55%;
 
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 214 100% 50%;
+    --sidebar-primary: 220 74% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 187 100% 50%;
     --sidebar-accent-foreground: 0 0% 7%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 214 100% 50%;
+    --sidebar-ring: 220 74% 55%;
 
     /* Gradients - Ciano → Azul → Roxo */
-    --gradient-primary: linear-gradient(90deg, hsl(200 100% 40%) 0%, hsl(214 100% 30%) 40%, hsl(271 76% 48%) 75%, hsl(293 100% 54%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(220 74% 55%) 0%, hsl(222 77% 50%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 11%) 0%, hsl(0 0% 13%) 100%);
 
