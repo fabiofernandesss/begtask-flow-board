@@ -57,6 +57,10 @@ All colors MUST be HSL.
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
+    /* Brand Gold - from logo */
+    --brand-gold: 40 80% 49%;
+    --brand-gold-foreground: 0 0% 100%;
+
     /* Warning */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
@@ -156,6 +160,9 @@ All colors MUST be HSL.
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+
+    --brand-gold: 40 80% 49%;
+    --brand-gold-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
