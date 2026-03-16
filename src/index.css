@@ -129,10 +129,10 @@ All colors MUST be HSL.
     --popover-foreground: 0 0% 98%;
 
     /* Primary - Azul Royal mais claro no dark */
-    --primary: 214 100% 50%;
+    --primary: 220 74% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 100% 41%;
-    --primary-light: 214 100% 15%;
+    --primary-hover: 222 77% 48%;
+    --primary-light: 220 74% 15%;
 
     /* Accent Cyan */
     --accent-cyan: 187 100% 50%;
