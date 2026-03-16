@@ -24,10 +24,10 @@ All colors MUST be HSL.
     --popover-foreground: 220 20% 10%;
 
     /* Primary - Azul Royal Vibrante #0056D2 */
-    --primary: 214 100% 41%;
+    --primary: 220 74% 48%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 100% 34%;
-    --primary-light: 214 100% 96%;
+    --primary-hover: 222 77% 40%;
+    --primary-light: 220 74% 96%;
 
     /* Accent Cyan - #00E5FF */
     --accent-cyan: 187 100% 50%;
