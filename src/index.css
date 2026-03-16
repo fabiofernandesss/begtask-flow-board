@@ -175,7 +175,7 @@ All colors MUST be HSL.
     --sidebar-accent: 187 100% 50%;
     --sidebar-accent-foreground: 0 0% 7%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 214 100% 50%;
+    --sidebar-ring: 220 74% 55%;
 
     /* Gradients - Ciano → Azul → Roxo */
     --gradient-primary: linear-gradient(90deg, hsl(200 100% 40%) 0%, hsl(214 100% 30%) 40%, hsl(271 76% 48%) 75%, hsl(293 100% 54%) 100%);
